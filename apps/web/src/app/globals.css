@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-core:    #41aafd;
+  --color-intel:   #4b457b;
+  --color-naranja: #ff910e;
+  --color-lima:    #b4d70e;
+  --color-cyan:    #0cc1d1;
+  --color-amarillo:#ffc00d;
+  --color-oliva:   #9e9554;
+  --color-negro:   #1d1e1c;
+  --color-gris-900:#1f2937;
+  --color-gris-700:#374151;
+  --color-gris-500:#6b7280;
+  --color-gris-300:#d1d5db;
+  --color-gris-100:#f3f4f6;
+  --color-gris-50: #f8fafc;
+  --color-blanco:  #ffffff;
+  --color-primary: var(--color-core);
+  --color-primary-hover: #2d8fd9;
+  --color-secondary: var(--color-intel);
+  --color-text: var(--color-negro);
+  --color-text-muted: var(--color-gris-500);
+  --color-bg: var(--color-blanco);
+  --color-bg-subtle: var(--color-gris-50);
+  --color-border: var(--color-gris-300);
+}
+
+html, body { color: var(--color-text); background: var(--color-bg); }
+body { font-feature-settings: "ss01" on, "cv01" on; }
+
+a { color: var(--color-primary-hover); }
+a:hover { text-decoration: underline; }
+
+/* Markdown body inside reports */
+.prose-coreintel h1 { @apply text-h2 text-intel mt-8 mb-3; }
+.prose-coreintel h2 { @apply text-h3 text-intel mt-6 mb-2; }
+.prose-coreintel h3 { @apply text-h4 text-intel mt-4 mb-2; }
+.prose-coreintel p  { @apply my-3 text-negro/90; }
+.prose-coreintel ul { @apply list-disc pl-6 my-3; }
+.prose-coreintel ol { @apply list-decimal pl-6 my-3; }
+.prose-coreintel table { @apply w-full border-collapse my-4 text-sm; }
+.prose-coreintel th, .prose-coreintel td { @apply border border-gris-300 px-3 py-1.5; }
+.prose-coreintel th { @apply bg-intel-50 text-intel-700 text-left; }
+.prose-coreintel code { @apply bg-gris-100 px-1.5 py-0.5 rounded text-sm; }

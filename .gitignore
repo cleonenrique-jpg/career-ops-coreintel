@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.next/
+out/
+.turbo/
+.vercel/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Generated
+coverage/
+*.tsbuildinfo
+
+# Local migration artifacts
+scripts/migrate-cache/

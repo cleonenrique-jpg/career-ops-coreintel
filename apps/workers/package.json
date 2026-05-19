@@ -1,0 +1,30 @@
+{
+  "name": "@career-ops/workers",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev:scanner": "tsx watch src/scanner.ts",
+    "dev:evaluator": "tsx watch src/evaluator.ts",
+    "dev:pdfgen": "tsx watch src/pdfgen.ts",
+    "dev:liveness": "tsx watch src/liveness.ts"
+  },
+  "dependencies": {
+    "@career-ops/db": "workspace:*",
+    "@career-ops/gemini": "workspace:*",
+    "@career-ops/scan-core": "workspace:*",
+    "@career-ops/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.45.4",
+    "drizzle-orm": "^0.36.0",
+    "pg-boss": "^10.1.5",
+    "playwright": "^1.48.0",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
