@@ -12,8 +12,11 @@ const genAI = new GoogleGenerativeAI(apiKey ?? '');
 
 // Approximate pricing (USD per 1M tokens). Update when Google changes them.
 const PRICING: Record<string, { input: number; output: number }> = {
-  'gemini-2.5-pro':   { input: 1.25,  output: 10.00 },
-  'gemini-2.5-flash': { input: 0.075, output: 0.30 },
+  'gemini-2.5-pro':        { input: 1.25,  output: 10.00 },
+  'gemini-2.5-flash':      { input: 0.075, output: 0.30 },
+  'gemini-2.5-flash-lite': { input: 0.075, output: 0.30 },
+  'gemini-2.0-flash':      { input: 0.10,  output: 0.40 },
+  'gemini-2.0-flash-lite': { input: 0.075, output: 0.30 },
 };
 
 export interface CallOptions {

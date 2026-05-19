@@ -15,7 +15,7 @@ interface AppRow {
   role: string;
   score: string | null;
   status: ApplicationStatus;
-  pdf_url: string | null;
+  pdfUrl: string | null;
 }
 
 export default function ApplicationsPage() {
@@ -63,8 +63,8 @@ export default function ApplicationsPage() {
                   <td className="px-3 py-2">{r.score ?? '—'}</td>
                   <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
                   <td className="px-3 py-2">
-                    {r.pdf_url
-                      ? <a className="text-core-700 hover:underline" href={r.pdf_url} target="_blank" rel="noreferrer">PDF</a>
+                    {r.pdfUrl
+                      ? <a className="text-core-700 hover:underline" href={r.pdfUrl} target="_blank" rel="noreferrer">PDF</a>
                       : '—'}
                   </td>
                 </tr>
