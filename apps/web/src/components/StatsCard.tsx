@@ -1,4 +1,5 @@
 import { HTMLAttributes } from 'react';
+import { Icon } from './Icon';
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   label: string;
@@ -21,8 +22,9 @@ export function StatsCard({ label, value, icon, accent, active, onClick, classNa
       {...rest}
     >
       <div className="text-h3 font-bold text-intel-700">{value}</div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-gris-500 mt-0.5">
-        {icon} {label}
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gris-500 mt-0.5 flex items-center gap-1">
+        <Icon name={icon} size={16} className="text-gris-500" />
+        {label}
       </div>
     </div>
   );

@@ -19,6 +19,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={montserrat.variable}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,-50..200"
+        />
+      </head>
       <body className="font-sans bg-[var(--color-bg-subtle)] min-h-screen">
         <Header />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>

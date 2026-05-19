@@ -1,4 +1,5 @@
 import type { ApplicationStatus } from '@career-ops/shared';
+import { Icon } from './Icon';
 
 export type StepState = 'done' | 'active' | 'pending' | 'rejected' | 'skipped';
 
@@ -44,6 +45,13 @@ const summaryTone: Record<NonNullable<Props['summaryTone']>, string> = {
   danger:  'text-red-600',
 };
 
+function DotMark({ state }: { state: StepState }) {
+  if (state === 'done')     return <Icon name="check" size={9} weight={700} />;
+  if (state === 'rejected') return <Icon name="close" size={9} weight={700} />;
+  if (state === 'skipped')  return <Icon name="remove" size={9} weight={700} />;
+  return null;
+}
+
 export function Timeline({ steps, summary, summaryTone: tone = 'neutral' }: Props) {
   return (
     <div className="flex flex-col gap-0.5 min-w-[220px]">
@@ -57,11 +65,9 @@ export function Timeline({ steps, summary, summaryTone: tone = 'neutral' }: Prop
               />
             )}
             <div
-              className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 z-10 flex items-center justify-center text-[8px] leading-none font-bold ${dotStyles[s.state]}`}
+              className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 z-10 flex items-center justify-center ${dotStyles[s.state]}`}
             >
-              {s.state === 'done' && '✓'}
-              {s.state === 'rejected' && '✗'}
-              {s.state === 'skipped' && '—'}
+              <DotMark state={s.state} />
             </div>
             <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
               <span className={labelStyles[s.state]}>{s.label}</span>
@@ -79,14 +85,12 @@ export function Timeline({ steps, summary, summaryTone: tone = 'neutral' }: Prop
   );
 }
 
-// ── Builder that maps an application's status + dates → Timeline steps ──────
-
 const STAGE_ORDER: ApplicationStatus[] = ['Evaluated', 'Applied', 'Responded', 'Interview', 'Offer'];
 
 export function buildTimeline(opts: {
   status: ApplicationStatus;
-  date: string;        // ISO date (Aplicada / Pendiente date)
-  updatedAt: string;   // last status change
+  date: string;
+  updatedAt: string;
   score: number | null;
 }): { steps: TimelineStep[]; summary: string; tone: 'neutral' | 'warn' | 'danger' } {
   const { status, date, updatedAt, score } = opts;
@@ -100,7 +104,6 @@ export function buildTimeline(opts: {
     return d.toLocaleDateString('es', { day: '2-digit', month: 'short' });
   }
 
-  // SKIP / Discarded — never applied
   if (status === 'SKIP' || status === 'Discarded') {
     const steps: TimelineStep[] = [
       { label: 'No aplicada', state: 'skipped', meta: fmt(applied) },
@@ -111,26 +114,23 @@ export function buildTimeline(opts: {
     return {
       steps,
       summary: status === 'SKIP'
-        ? `⏸ ${score && score < 3 ? 'Score bajo · no recomendado' : 'No aplicar'}`
-        : '⏸ Descartada',
+        ? (score && score < 3 ? 'Score bajo · no recomendado' : 'No aplicar')
+        : 'Descartada',
       tone: score && score < 3 ? 'danger' : 'neutral',
     };
   }
 
-  // Rejected — has at least Applied, maybe up to Interview
   if (status === 'Rejected') {
-    const reachedInterview = false; // we don't track this precisely yet
     const steps: TimelineStep[] = [
       { label: 'Aplicada', state: 'done', meta: fmt(applied) },
       { label: 'Contactada', state: 'done', meta: fmt(updated) },
-      { label: 'Entrevista', state: reachedInterview ? 'done' : 'skipped', meta: reachedInterview ? '' : 'sin avanzar' },
+      { label: 'Entrevista', state: 'skipped', meta: 'sin avanzar' },
       { label: 'Rechazo', state: 'rejected', meta: `${fmt(updated)} · +${daysFromApplied}d` },
     ];
-    return { steps, summary: `⏱ ${daysFromApplied} días proceso · ¿lección aprendida?`, tone: 'neutral' };
+    return { steps, summary: `${daysFromApplied} días proceso · ¿lección aprendida?`, tone: 'neutral' };
   }
 
   const idx = STAGE_ORDER.indexOf(status);
-  // "Evaluated" but not yet Applied → it's pending in the pipeline sense
   if (idx <= 0) {
     return {
       steps: [
@@ -140,15 +140,14 @@ export function buildTimeline(opts: {
         { label: 'Esperando decisión', state: 'pending' },
       ],
       summary: score && score >= 4
-        ? `📥 Score alto, vale la pena aplicar`
+        ? 'Score alto, vale la pena aplicar'
         : score && score < 3
-        ? '⚠️ Score bajo · no recomendado'
-        : '📥 Pendiente de aplicar',
+        ? 'Score bajo · no recomendado'
+        : 'Pendiente de aplicar',
       tone: score && score < 3 ? 'danger' : 'neutral',
     };
   }
 
-  // Applied → mark stages up to current
   const stages: TimelineStep[] = [
     {
       label: 'Aplicada',
@@ -157,7 +156,7 @@ export function buildTimeline(opts: {
     },
     {
       label: 'Contactada',
-      state: idx >= 2 ? 'done' : idx === 1 ? 'pending' : 'pending',
+      state: idx >= 2 ? 'done' : 'pending',
       meta: idx >= 2 ? fmt(updated) : idx === 1 ? 'sin respuesta' : undefined,
     },
     {
@@ -172,20 +171,19 @@ export function buildTimeline(opts: {
     },
   ];
 
-  // Pick the latest active step (the first one not yet done)
   const firstPending = stages.findIndex((s) => s.state === 'pending');
   if (firstPending > 0 && idx >= firstPending - 1) {
     stages[firstPending - 1]!.state = stages[firstPending - 1]!.state === 'done' ? 'done' : 'active';
   }
 
-  let summary = `⏱ ${daysFromApplied} días en proceso`;
+  let summary = `${daysFromApplied} días en proceso`;
   let tone: 'neutral' | 'warn' | 'danger' = 'neutral';
   if (status === 'Applied' && daysFromUpdated >= 4) {
-    summary = `⏱ Follow-up sugerido${daysFromUpdated >= 7 ? ' (atrasado)' : ''}`;
+    summary = `Follow-up sugerido${daysFromUpdated >= 7 ? ' (atrasado)' : ''}`;
     tone = daysFromUpdated >= 7 ? 'warn' : 'neutral';
   }
-  if (status === 'Offer') summary = `⏱ ${daysFromApplied} días proceso total`;
-  if (status === 'Interview') summary = `⏱ ${daysFromApplied} días · prep recomendado`;
+  if (status === 'Offer') summary = `${daysFromApplied} días proceso total`;
+  if (status === 'Interview') summary = `${daysFromApplied} días · prep recomendado`;
 
   return { steps: stages, summary, tone };
 }

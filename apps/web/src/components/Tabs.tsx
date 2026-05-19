@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
+import { Icon } from './Icon';
 
 export interface TabDef {
   key: string;
@@ -40,13 +41,13 @@ export function Tabs({ tabs, defaultTab, children }: Props) {
           <button
             key={t.key}
             onClick={() => select(t.key)}
-            className={`px-4 py-2 text-sm border-b-2 transition -mb-px ${
+            className={`px-4 py-2 text-sm border-b-2 transition -mb-px inline-flex items-center gap-1.5 ${
               active === t.key
                 ? 'border-core text-intel-700 font-semibold'
                 : 'border-transparent text-gris-500 hover:text-intel-700'
             }`}
           >
-            {t.icon && <span className="mr-1.5">{t.icon}</span>}
+            {t.icon && <Icon name={t.icon} size={16} />}
             {t.label}
           </button>
         ))}

@@ -9,6 +9,7 @@ import { FilterChip } from '@/components/FilterChip';
 import { Timeline, buildTimeline } from '@/components/Timeline';
 import { RowMenu } from '@/components/RowMenu';
 import { Ribbon } from '@/components/Ribbon';
+import { Icon } from '@/components/Icon';
 import { api } from '@/lib/api';
 import { type ApplicationStatus } from '@career-ops/shared';
 
@@ -38,25 +39,25 @@ interface PipelineRow {
 
 type FilterKey = 'all' | 'pending' | 'applied' | 'interview' | 'offer' | 'closed' | 'high';
 
-const FILTERS: { key: FilterKey; label: (n: number) => string }[] = [
-  { key: 'all',       label: (n) => `Todas (${n})` },
-  { key: 'pending',   label: (n) => `📥 Pendientes (${n})` },
-  { key: 'applied',   label: (n) => `📤 Aplicadas (${n})` },
-  { key: 'interview', label: (n) => `🎤 En entrevista (${n})` },
-  { key: 'offer',     label: (n) => `🎁 Ofertas (${n})` },
-  { key: 'closed',    label: (n) => `❌ Cerradas (${n})` },
-  { key: 'high',      label: (n) => `📊 Score ≥ 4.0 (${n})` },
+const FILTERS: { key: FilterKey; label: string; icon?: string }[] = [
+  { key: 'all',       label: 'Todas' },
+  { key: 'pending',   label: 'Pendientes',   icon: 'inbox' },
+  { key: 'applied',   label: 'Aplicadas',    icon: 'send' },
+  { key: 'interview', label: 'En entrevista', icon: 'mic' },
+  { key: 'offer',     label: 'Ofertas',      icon: 'redeem' },
+  { key: 'closed',    label: 'Cerradas',     icon: 'block' },
+  { key: 'high',      label: 'Score ≥ 4.0',  icon: 'bar_chart' },
 ];
 
 const STATUS_BADGE: Record<ApplicationStatus, { tone: string; icon: string; label: string }> = {
-  Evaluated: { tone: 'bg-gris-100 text-gris-700 border-l-gris-500',                  icon: '📥', label: 'Pendiente' },
-  Applied:   { tone: 'bg-core/10 text-core-700 border-l-core',                       icon: '📤', label: 'Aplicada' },
-  Responded: { tone: 'bg-amarillo/15 text-[#7a5d00] border-l-amarillo',              icon: '📞', label: 'Contactada' },
-  Interview: { tone: 'bg-naranja/15 text-[#a85100] border-l-naranja',                icon: '🎤', label: 'Entrevista' },
-  Offer:     { tone: 'bg-lima/20 text-[#5b6c00] border-l-lima',                      icon: '🎁', label: '¡Oferta!' },
-  Rejected:  { tone: 'bg-red-100 text-red-700 border-l-red-500',                     icon: '❌', label: 'Rechazada' },
-  Discarded: { tone: 'bg-gris-100 text-gris-500 border-l-gris-300',                  icon: '⏸',  label: 'Descartada' },
-  SKIP:      { tone: 'bg-gris-100 text-gris-500 border-l-gris-300',                  icon: '⏸',  label: 'SKIP' },
+  Evaluated: { tone: 'bg-gris-100 text-gris-700 border-l-gris-500',                  icon: 'inbox',             label: 'Pendiente' },
+  Applied:   { tone: 'bg-core/10 text-core-700 border-l-core',                       icon: 'send',              label: 'Aplicada' },
+  Responded: { tone: 'bg-amarillo/15 text-[#7a5d00] border-l-amarillo',              icon: 'forum',             label: 'Contactada' },
+  Interview: { tone: 'bg-naranja/15 text-[#a85100] border-l-naranja',                icon: 'mic',               label: 'Entrevista' },
+  Offer:     { tone: 'bg-lima/20 text-[#5b6c00] border-l-lima',                      icon: 'redeem',            label: '¡Oferta!' },
+  Rejected:  { tone: 'bg-red-100 text-red-700 border-l-red-500',                     icon: 'block',             label: 'Rechazada' },
+  Discarded: { tone: 'bg-gris-100 text-gris-500 border-l-gris-300',                  icon: 'archive',           label: 'Descartada' },
+  SKIP:      { tone: 'bg-gris-100 text-gris-500 border-l-gris-300',                  icon: 'do_not_disturb_on', label: 'SKIP' },
 };
 
 function scoreClass(score: number | null): string {
@@ -168,34 +169,41 @@ export default function PipelineHome() {
       <Ribbon />
 
       <Card className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-        <input
-          type="text"
-          value={newUrl}
-          onChange={(e) => setNewUrl(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') addUrl(); }}
-          placeholder="🔗 Pega URL de oferta (LinkedIn / Computrabajo / PROCOMER / Talent.com / CINDE) …"
-          className="flex-1 rounded border border-gris-300 px-3 py-2 text-sm"
-        />
-        <Button onClick={addUrl} disabled={!newUrl.trim() || adding}>
-          {adding ? 'Encolando…' : '+ Agregar y evaluar'}
+        <div className="flex-1 flex items-center gap-2 rounded border border-gris-300 px-3">
+          <Icon name="link" size={18} className="text-gris-500" />
+          <input
+            type="text"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') addUrl(); }}
+            placeholder="Pega URL de oferta (LinkedIn / Computrabajo / PROCOMER / Talent.com / CINDE) …"
+            className="flex-1 py-2 text-sm outline-none"
+          />
+        </div>
+        <Button onClick={addUrl} disabled={!newUrl.trim() || adding} className="gap-1.5">
+          <Icon name={adding ? 'hourglass_top' : 'add'} size={16} />
+          {adding ? 'Encolando…' : 'Agregar y evaluar'}
         </Button>
-        <Button variant="secondary" onClick={runScan}>🔍 Run scan</Button>
+        <Button variant="secondary" onClick={runScan} className="gap-1.5">
+          <Icon name="search" size={16} /> Run scan
+        </Button>
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatsCard label="Pendientes"   icon="📥" value={counts.pending}    accent="#6b7280" active={filter === 'pending'}   onClick={() => setFilter('pending')} />
-        <StatsCard label="Aplicadas"    icon="📤" value={counts.applied}    accent="#41aafd" active={filter === 'applied'}   onClick={() => setFilter('applied')} />
-        <StatsCard label="Contactadas"  icon="📞" value={counts.responded}  accent="#ffc00d" />
-        <StatsCard label="Entrevista"   icon="🎤" value={counts.interview}  accent="#ff910e" active={filter === 'interview'} onClick={() => setFilter('interview')} />
-        <StatsCard label="Ofertas"      icon="🎁" value={counts.offer}      accent="#b4d70e" active={filter === 'offer'}     onClick={() => setFilter('offer')} />
-        <StatsCard label="Rechazadas"   icon="❌" value={counts.rejected}   accent="#ef4444" active={filter === 'closed'}    onClick={() => setFilter('closed')} />
+        <StatsCard label="Pendientes"   icon="inbox"             value={counts.pending}    accent="#6b7280" active={filter === 'pending'}   onClick={() => setFilter('pending')} />
+        <StatsCard label="Aplicadas"    icon="send"              value={counts.applied}    accent="#41aafd" active={filter === 'applied'}   onClick={() => setFilter('applied')} />
+        <StatsCard label="Contactadas"  icon="forum"             value={counts.responded}  accent="#ffc00d" />
+        <StatsCard label="Entrevista"   icon="mic"               value={counts.interview}  accent="#ff910e" active={filter === 'interview'} onClick={() => setFilter('interview')} />
+        <StatsCard label="Ofertas"      icon="redeem"            value={counts.offer}      accent="#b4d70e" active={filter === 'offer'}     onClick={() => setFilter('offer')} />
+        <StatsCard label="Rechazadas"   icon="block"             value={counts.rejected}   accent="#ef4444" active={filter === 'closed'}    onClick={() => setFilter('closed')} />
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
         {FILTERS.map((f) => (
           <FilterChip
             key={f.key}
-            label={f.label(filterCounts[f.key])}
+            label={`${f.label} (${filterCounts[f.key]})`}
+            icon={f.icon}
             active={filter === f.key}
             onClick={() => setFilter(f.key)}
           />
@@ -241,7 +249,7 @@ export default function PipelineHome() {
                       <td className="px-3 py-3 text-gris-500">—</td>
                       <td className="px-3 py-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide border-l-2 ${STATUS_BADGE.Evaluated.tone}`}>
-                          {STATUS_BADGE.Evaluated.icon} Pendiente
+                          <Icon name={STATUS_BADGE.Evaluated.icon} size={12} /> Pendiente
                         </span>
                       </td>
                       <td className="px-3 py-3">
@@ -256,9 +264,9 @@ export default function PipelineHome() {
                         />
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap align-top">
-                        <a className="block text-[12px] text-lima font-semibold pb-1 mb-1.5 border-b border-dashed border-gris-300 hover:underline" href={p.url} target="_blank" rel="noreferrer">🔗 Ver oferta</a>
-                        <button onClick={() => api.post('/api/pipeline/evaluate', { ids: [p.id] }).then(load)} className="block text-[12px] text-core-700 hover:underline">📄 Evaluar</button>
-                        <button onClick={() => discardPending(p.id)} className="block text-[12px] text-red-600 hover:underline">❌ Descartar</button>
+                        <a className="text-[12px] text-[#5b6c00] font-semibold pb-1 mb-1.5 border-b border-dashed border-gris-300 hover:underline flex items-center gap-1" href={p.url} target="_blank" rel="noreferrer"><Icon name="open_in_new" size={13} /> Ver oferta</a>
+                        <button onClick={() => api.post('/api/pipeline/evaluate', { ids: [p.id] }).then(load)} className="text-[12px] text-core-700 hover:underline flex items-center gap-1"><Icon name="description" size={13} /> Evaluar</button>
+                        <button onClick={() => discardPending(p.id)} className="text-[12px] text-red-600 hover:underline flex items-center gap-1"><Icon name="block" size={13} /> Descartar</button>
                       </td>
                     </tr>
                   );
@@ -283,7 +291,7 @@ export default function PipelineHome() {
                     </td>
                     <td className="px-3 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide border-l-2 ${badge.tone}`}>
-                        {badge.icon} {badge.label}
+                        <Icon name={badge.icon} size={12} /> {badge.label}
                       </span>
                     </td>
                     <td className="px-3 py-3">
@@ -291,12 +299,12 @@ export default function PipelineHome() {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap align-top">
                       {a.url && (
-                        <a className="block text-[12px] text-lima font-semibold pb-1 mb-1.5 border-b border-dashed border-gris-300 hover:underline" href={a.url} target="_blank" rel="noreferrer">🔗 Ver oferta</a>
+                        <a className="text-[12px] text-[#5b6c00] font-semibold pb-1 mb-1.5 border-b border-dashed border-gris-300 hover:underline flex items-center gap-1" href={a.url} target="_blank" rel="noreferrer"><Icon name="open_in_new" size={13} /> Ver oferta</a>
                       )}
-                      <Link href={`/applications/${a.id}`} className="block text-[12px] text-core-700 hover:underline">📄 Reporte</Link>
-                      {a.status === 'Interview' && <a href="#" className="block text-[12px] text-naranja hover:underline">🎯 Prep</a>}
-                      {a.status === 'Offer' && <a href="#" className="block text-[12px] text-lima hover:underline">✍️ Negociar</a>}
-                      {(a.status === 'Applied' || a.status === 'Responded') && <a href="#" className="block text-[12px] text-amarillo hover:underline">📩 Follow-up</a>}
+                      <Link href={`/applications/${a.id}`} className="text-[12px] text-core-700 hover:underline flex items-center gap-1"><Icon name="description" size={13} /> Reporte</Link>
+                      {a.status === 'Interview' && <a href="#" className="text-[12px] text-naranja hover:underline flex items-center gap-1"><Icon name="psychology" size={13} /> Prep</a>}
+                      {a.status === 'Offer' && <a href="#" className="text-[12px] text-[#5b6c00] hover:underline flex items-center gap-1"><Icon name="handshake" size={13} /> Negociar</a>}
+                      {(a.status === 'Applied' || a.status === 'Responded') && <a href="#" className="text-[12px] text-amarillo hover:underline flex items-center gap-1"><Icon name="mark_email_unread" size={13} /> Follow-up</a>}
                       <div className="mt-1 pt-1 border-t border-dashed border-gris-300 flex justify-end">
                         <RowMenu
                           currentStatus={a.status}

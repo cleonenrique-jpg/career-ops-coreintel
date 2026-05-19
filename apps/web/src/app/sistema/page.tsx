@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Tabs } from '@/components/Tabs';
+import { Icon } from '@/components/Icon';
 import { api } from '@/lib/api';
 
 interface Portal {
@@ -22,10 +23,10 @@ interface Funnel {
 }
 
 const TABS = [
-  { key: 'fuentes',  label: 'Fuentes',  icon: '📡' },
-  { key: 'scans',    label: 'Scans',    icon: '🔄' },
-  { key: 'costos',   label: 'Costos',   icon: '💰' },
-  { key: 'storage',  label: 'Storage',  icon: '📦' },
+  { key: 'fuentes',  label: 'Fuentes',  icon: 'rss_feed' },
+  { key: 'scans',    label: 'Scans',    icon: 'autorenew' },
+  { key: 'costos',   label: 'Costos',   icon: 'payments' },
+  { key: 'storage',  label: 'Storage',  icon: 'folder' },
 ];
 
 function SistemaContent() {
@@ -88,8 +89,9 @@ function SistemaContent() {
                       {Object.entries(sourceBreakdown).map(([s, n]) => `${s}: ${n}`).join(' · ')}
                     </div>
                   </div>
-                  <Button onClick={runScan} disabled={running}>
-                    {running ? '🔄 Disparando…' : '🔍 Ejecutar scan ahora'}
+                  <Button onClick={runScan} disabled={running} className="gap-1.5">
+                    <Icon name={running ? 'hourglass_top' : 'search'} size={16} />
+                    {running ? 'Disparando…' : 'Ejecutar scan ahora'}
                   </Button>
                 </Card>
 
@@ -129,8 +131,9 @@ function SistemaContent() {
                 <p className="text-sm text-gris-500 mb-2">
                   El scanner corre cada 6h por cron en Railway. Próximamente: historial detallado por ejecución.
                 </p>
-                <Button onClick={runScan} disabled={running}>
-                  {running ? 'Disparando…' : '🔄 Ejecutar scan manual'}
+                <Button onClick={runScan} disabled={running} className="gap-1.5">
+                  <Icon name="autorenew" size={16} />
+                  {running ? 'Disparando…' : 'Ejecutar scan manual'}
                 </Button>
                 <p className="text-xs text-gris-500 mt-3">
                   Fuentes activas: Greenhouse / Ashby / Lever (APIs) + Talent.com / Computrabajo / PROCOMER / CINDE / LinkedIn (Playwright).

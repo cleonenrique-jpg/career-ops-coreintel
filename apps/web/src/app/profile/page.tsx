@@ -27,11 +27,11 @@ interface ProfileData {
 }
 
 const TABS = [
-  { key: 'info',       label: 'Info',       icon: '👤' },
-  { key: 'cv',         label: 'CV',         icon: '📄' },
-  { key: 'archetypes', label: 'Archetypes', icon: '🎯' },
-  { key: 'comp',       label: 'Comp',       icon: '💰' },
-  { key: 'idiomas',    label: 'Idiomas',    icon: '🌐' },
+  { key: 'info',       label: 'Info',       icon: 'person' },
+  { key: 'cv',         label: 'CV',         icon: 'description' },
+  { key: 'archetypes', label: 'Archetypes', icon: 'flag' },
+  { key: 'comp',       label: 'Comp',       icon: 'payments' },
+  { key: 'idiomas',    label: 'Idiomas',    icon: 'language' },
 ];
 
 function ProfileContent() {

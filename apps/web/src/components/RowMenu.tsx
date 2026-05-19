@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { APPLICATION_STATUSES, type ApplicationStatus } from '@career-ops/shared';
+import { Icon } from './Icon';
 
 interface Props {
   currentStatus: ApplicationStatus;
@@ -11,14 +12,14 @@ interface Props {
 }
 
 const STATUS_ICONS: Record<ApplicationStatus, string> = {
-  Evaluated: '📥',
-  Applied:   '📤',
-  Responded: '📞',
-  Interview: '🎤',
-  Offer:     '🎁',
-  Rejected:  '❌',
-  Discarded: '⏸',
-  SKIP:      '⏸',
+  Evaluated: 'inbox',
+  Applied:   'send',
+  Responded: 'forum',
+  Interview: 'mic',
+  Offer:     'redeem',
+  Rejected:  'block',
+  Discarded: 'archive',
+  SKIP:      'do_not_disturb_on',
 };
 
 export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: Props) {
@@ -42,10 +43,10 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="px-2 py-0.5 rounded text-gris-500 hover:bg-intel-50 hover:text-intel-700 font-bold text-lg leading-none"
+        className="px-1.5 py-1 rounded text-gris-500 hover:bg-intel-50 hover:text-intel-700"
         aria-label="Más acciones"
       >
-        ⋮
+        <Icon name="more_vert" size={18} />
       </button>
 
       {open && (
@@ -56,8 +57,8 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
             onMouseLeave={() => setSubOpen(false)}
           >
             <button className="w-full text-left px-3 py-2 text-xs text-intel-700 hover:bg-intel-50 flex items-center justify-between rounded">
-              <span>⚙️ Cambiar estado</span>
-              <span className="text-gris-500 text-[10px]">▸</span>
+              <span className="flex items-center gap-2"><Icon name="tune" size={14} /> Cambiar estado</span>
+              <Icon name="chevron_right" size={14} className="text-gris-500" />
             </button>
             {subOpen && (
               <div className="absolute right-full top-0 mr-1 bg-white border border-gris-300 rounded-lg shadow-lg min-w-[200px] py-1.5">
@@ -69,8 +70,11 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
                       s === currentStatus ? 'bg-intel-50 text-intel-700 font-semibold' : 'text-intel-700'
                     }`}
                   >
-                    <span className="w-3 text-lima">{s === currentStatus ? '✓' : ''}</span>
-                    <span>{STATUS_ICONS[s]} {s}</span>
+                    <span className="w-3 text-lima">
+                      {s === currentStatus && <Icon name="check" size={12} weight={700} />}
+                    </span>
+                    <Icon name={STATUS_ICONS[s]} size={14} />
+                    {s}
                   </button>
                 ))}
               </div>
@@ -80,9 +84,9 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
           {onCopyUrl && (
             <button
               onClick={() => { onCopyUrl(); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-xs text-intel-700 hover:bg-intel-50 rounded"
+              className="w-full text-left px-3 py-2 text-xs text-intel-700 hover:bg-intel-50 rounded flex items-center gap-2"
             >
-              📋 Copiar URL
+              <Icon name="content_copy" size={14} /> Copiar URL
             </button>
           )}
           {onDelete && (
@@ -90,9 +94,9 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
               <div className="h-px bg-gris-300 my-1" />
               <button
                 onClick={() => { onDelete(); setOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded"
+                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded flex items-center gap-2"
               >
-                🗑 Eliminar fila
+                <Icon name="delete" size={14} /> Eliminar fila
               </button>
             </>
           )}
