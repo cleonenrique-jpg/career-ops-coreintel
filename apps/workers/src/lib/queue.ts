@@ -1,13 +1,18 @@
 import PgBoss from 'pg-boss';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error('DATABASE_URL required for queue');
+// On Supabase free, direct connection (5432) requires IPv6. The pooler (6543)
+// works over IPv4 but is transaction-mode, so we disable LISTEN/NOTIFY-based
+// workers (`supervise: false`) and pg-boss falls back to polling.
+const connectionString = process.env.DATABASE_URL_POOLER ?? process.env.DATABASE_URL;
+if (!connectionString) throw new Error('DATABASE_URL or DATABASE_URL_POOLER required for queue');
 
 export const boss = new PgBoss({
   connectionString,
   schema: process.env.JOBS_SCHEMA ?? 'pgboss',
-  // Pin retention so failed jobs surface in evaluation_runs.error_message.
   retentionDays: 7,
+  supervise: false,
+  noScheduling: true,
+  application_name: 'career-ops-workers',
 });
 
 export const QUEUES = {

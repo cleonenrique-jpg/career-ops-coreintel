@@ -17,8 +17,14 @@ async function nextApplicationNum(userId: string): Promise<number> {
   return (row?.max ?? 0) + 1;
 }
 
-async function handleEvaluate(job: { data: EvaluateJobData }) {
-  const { userId, pipelineUrlId } = job.data;
+async function handleEvaluate(jobs: Array<{ data: EvaluateJobData }>) {
+  for (const job of jobs) {
+    await handleOne(job.data);
+  }
+}
+
+async function handleOne(data: EvaluateJobData) {
+  const { userId, pipelineUrlId } = data;
 
   const [pu] = await db.select().from(pipelineUrls)
     .where(and(eq(pipelineUrls.id, pipelineUrlId), eq(pipelineUrls.userId, userId)));
@@ -104,6 +110,9 @@ async function handleEvaluate(job: { data: EvaluateJobData }) {
 
 async function main() {
   await boss.start();
+  // pg-boss v10+ requires explicit queue creation before send/work.
+  await boss.createQueue(QUEUES.evaluate);
+  await boss.createQueue(QUEUES.pdfgen);
   await boss.work<EvaluateJobData>(QUEUES.evaluate, { teamSize: 2 }, handleEvaluate);
   console.log('[evaluator] ready, listening on', QUEUES.evaluate);
 }
