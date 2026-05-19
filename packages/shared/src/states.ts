@@ -36,5 +36,5 @@ export type PipelineUrlStatus = (typeof PIPELINE_URL_STATUSES)[number];
 export const LIVENESS_RESULTS = ['active', 'expired', 'uncertain'] as const;
 export type LivenessResult = (typeof LIVENESS_RESULTS)[number];
 
-export const SCAN_SOURCES = ['greenhouse', 'ashby', 'lever', 'linkedin', 'computrabajo', 'talent', 'tecoloco', 'manual'] as const;
+export const SCAN_SOURCES = ['greenhouse', 'ashby', 'lever', 'linkedin', 'computrabajo', 'talent', 'tecoloco', 'procomer', 'cinde', 'manual'] as const;
 export type ScanSource = (typeof SCAN_SOURCES)[number];

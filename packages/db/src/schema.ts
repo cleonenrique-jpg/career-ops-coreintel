@@ -22,7 +22,7 @@ export const pipelineStatusEnum = pgEnum('pipeline_url_status', [
 export const livenessEnum = pgEnum('liveness_result', ['active', 'expired', 'uncertain']);
 
 export const scanSourceEnum = pgEnum('scan_source', [
-  'greenhouse', 'ashby', 'lever', 'linkedin', 'computrabajo', 'talent', 'tecoloco', 'manual',
+  'greenhouse', 'ashby', 'lever', 'linkedin', 'computrabajo', 'talent', 'tecoloco', 'procomer', 'cinde', 'manual',
 ]);
 
 export const languageEnum = pgEnum('language_mode', ['en', 'es', 'de', 'fr', 'ja']);
