@@ -9,9 +9,8 @@ if (!connectionString) throw new Error('DATABASE_URL or DATABASE_URL_POOLER requ
 export const boss = new PgBoss({
   connectionString,
   schema: process.env.JOBS_SCHEMA ?? 'pgboss',
-  retentionDays: 7,
   supervise: false,
-  noScheduling: true,
+  schedule: false,
   application_name: 'career-ops-workers',
 });
 
@@ -19,6 +18,7 @@ export const QUEUES = {
   evaluate: 'evaluate-pipeline-url',
   pdfgen: 'generate-pdf',
   interviewPrep: 'generate-interview-prep',
+  tailorCv: 'tailor-cv',
 } as const;
 
 export type EvaluateJobData = {
@@ -34,5 +34,9 @@ export type PdfgenJobData = {
 export type InterviewPrepJobData = {
   userId: string;
   applicationId: string;
-  jd: string;
+};
+
+export type TailorCvJobData = {
+  userId: string;
+  applicationId: string;
 };

@@ -9,12 +9,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-
   async function sendMagicLink() {
+    // Lazy-init the supabase client so this page doesn't fail to pre-render
+    // when env vars aren't present at build time (Railway injects them at runtime).
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },

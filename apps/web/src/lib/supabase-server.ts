@@ -8,7 +8,7 @@ export function serverSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => store.get(name)?.value,
+        get: (name: string) => store.get(name)?.value,
         set: () => {},
         remove: () => {},
       },

@@ -27,8 +27,14 @@ function renderTemplate(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
 }
 
-async function handle(job: { data: PdfgenJobData }) {
-  const { userId, applicationId } = job.data;
+async function handleBatch(jobs: Array<{ data: PdfgenJobData }>) {
+  for (const job of jobs) {
+    await handleOne(job.data);
+  }
+}
+
+async function handleOne(data: PdfgenJobData) {
+  const { userId, applicationId } = data;
 
   const [app] = await db.select().from(applications)
     .where(and(eq(applications.id, applicationId), eq(applications.userId, userId)));
@@ -74,7 +80,8 @@ async function handle(job: { data: PdfgenJobData }) {
 
 async function main() {
   await boss.start();
-  await boss.work<PdfgenJobData>(QUEUES.pdfgen, { teamSize: 1 }, handle);
+  await boss.createQueue(QUEUES.pdfgen).catch(() => {});
+  await boss.work<PdfgenJobData>(QUEUES.pdfgen, { batchSize: 1 }, handleBatch);
   console.log('[pdfgen] ready');
 }
 

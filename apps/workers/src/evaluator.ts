@@ -1,7 +1,8 @@
 // Long-running queue consumer — for each pipeline_urls row marked pending,
-// fetch JD, call Gemini evaluateOffer, persist application + report, enqueue PDF.
+// fetch JD, call Gemini evaluateOffer, persist application + report.
+// CV PDF generation is user-triggered (manual) via /api/applications/:id/cv-tailored.
 
-import { boss, QUEUES, type EvaluateJobData, type PdfgenJobData } from './lib/queue.js';
+import { boss, QUEUES, type EvaluateJobData } from './lib/queue.js';
 import { fetchJd, shutdownBrowser } from './lib/fetchJd.js';
 import {
   db, applications, pipelineUrls, reports, profiles, cvs,
@@ -101,10 +102,6 @@ async function handleOne(data: EvaluateJobData) {
     applicationId: app.id,
   }).where(eq(pipelineUrls.id, pipelineUrlId));
 
-  if (evalResult.blockC.decision === 'apply') {
-    await boss.send(QUEUES.pdfgen, { userId, applicationId: app.id } satisfies PdfgenJobData);
-  }
-
   console.log(`[evaluator] ${company} | ${role} → score=${evalResult.blockC.score} decision=${evalResult.blockC.decision}`);
 }
 
@@ -112,8 +109,7 @@ async function main() {
   await boss.start();
   // pg-boss v10+ requires explicit queue creation before send/work.
   await boss.createQueue(QUEUES.evaluate);
-  await boss.createQueue(QUEUES.pdfgen);
-  await boss.work<EvaluateJobData>(QUEUES.evaluate, { teamSize: 2 }, handleEvaluate);
+  await boss.work<EvaluateJobData>(QUEUES.evaluate, { batchSize: 2 }, handleEvaluate);
   console.log('[evaluator] ready, listening on', QUEUES.evaluate);
 }
 

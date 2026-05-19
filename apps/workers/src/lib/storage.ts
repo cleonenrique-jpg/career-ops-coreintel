@@ -20,3 +20,20 @@ export async function uploadPdf(userId: string, filename: string, body: Buffer):
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
+
+export async function uploadFile(
+  userId: string,
+  filename: string,
+  body: Buffer,
+  contentType: string,
+  subdir = 'docs',
+): Promise<string> {
+  const path = `${userId}/${subdir}/${filename}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, body, {
+    contentType,
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}

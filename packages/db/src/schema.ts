@@ -130,8 +130,21 @@ export const interviewPrep = pgTable('interview_prep', {
   userId: uuid('user_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
   applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
   contentMd: text('content_md').notNull(),
+  fileUrl: text('file_url'),
   generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const cvTailored = pgTable('cv_tailored', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
+  applicationId: uuid('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+  contentMd: text('content_md').notNull(),
+  fileUrl: text('file_url'),
+  keywordCoverage: numeric('keyword_coverage', { precision: 4, scale: 1 }),
+  generatedAt: timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  appIdx: index('cv_tailored_app_idx').on(t.applicationId),
+}));
 
 export const storyBank = pgTable('story_bank', {
   id: uuid('id').primaryKey().defaultRandom(),

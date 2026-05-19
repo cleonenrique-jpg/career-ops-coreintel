@@ -7,6 +7,7 @@ import { pipelineRoute } from './routes/pipeline.js';
 import { profileRoute } from './routes/profile.js';
 import { scanRoute } from './routes/scan.js';
 import { metricsRoute } from './routes/metrics.js';
+import { followUpsRoute } from './routes/follow-ups.js';
 
 const app = new Hono();
 app.use('*', logger());
@@ -24,6 +25,7 @@ app.route('/api/pipeline', pipelineRoute);
 app.route('/api/profile', profileRoute);
 app.route('/api/scan', scanRoute);
 app.route('/api/metrics', metricsRoute);
+app.route('/api/follow-ups', followUpsRoute);
 
 const port = Number(process.env.API_PORT ?? 3001);
 serve({ fetch: app.fetch, port }, () => {

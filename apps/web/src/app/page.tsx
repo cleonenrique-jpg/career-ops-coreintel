@@ -22,6 +22,8 @@ interface AppRow {
   score: string | null;
   status: ApplicationStatus;
   pdfUrl: string | null;
+  cvTailoredUrl: string | null;
+  cvTailoredCoverage: string | null;
   url: string | null;
   notes: string | null;
   updatedAt: string;
@@ -67,9 +69,24 @@ function scoreClass(score: number | null): string {
   return 'text-red-600';
 }
 
+interface FollowUpItem {
+  applicationId: string;
+  num: number;
+  company: string;
+  role: string;
+  status: ApplicationStatus;
+  score: string | null;
+  url: string | null;
+  daysSinceMovement: number;
+  threshold: number;
+  isOverdue: boolean;
+  lastFollowUpAt: string | null;
+}
+
 export default function PipelineHome() {
   const [apps, setApps] = useState<AppRow[]>([]);
   const [pending, setPending] = useState<PipelineRow[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUpItem[]>([]);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [search, setSearch] = useState('');
   const [newUrl, setNewUrl] = useState('');
@@ -78,15 +95,22 @@ export default function PipelineHome() {
 
   async function load() {
     setLoading(true);
-    const [a, p] = await Promise.all([
+    const [a, p, f] = await Promise.all([
       api.get<{ applications: AppRow[] }>('/api/applications'),
       api.get<{ items: PipelineRow[] }>('/api/pipeline?status=pending'),
+      api.get<{ followUps: FollowUpItem[] }>('/api/follow-ups'),
     ]);
     setApps(a.applications);
     setPending(p.items);
+    setFollowUps(f.followUps);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
+
+  async function markFollowUpSent(applicationId: string) {
+    await api.post(`/api/follow-ups/${applicationId}`, { kind: 'check-in' });
+    await load();
+  }
 
   const counts = useMemo(() => {
     const c = { pending: pending.length, applied: 0, responded: 0, interview: 0, offer: 0, rejected: 0, discarded: 0 };
@@ -168,6 +192,40 @@ export default function PipelineHome() {
     <div className="space-y-4">
       <Ribbon />
 
+      {followUps.length > 0 && (
+        <Card className="border-l-4 border-l-amarillo bg-amarillo/5">
+          <div className="flex items-center gap-2 mb-3">
+            <Icon name="schedule" size={18} className="text-amarillo" />
+            <h3 className="font-semibold text-intel-700">Follow-ups pendientes ({followUps.length})</h3>
+          </div>
+          <div className="space-y-2">
+            {followUps.map((f) => (
+              <div key={f.applicationId} className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-gris-300/40 last:border-b-0">
+                <div className="flex items-center gap-3 text-sm">
+                  <Link href={`/applications/${f.applicationId}`} className="font-semibold text-intel-700 hover:underline">
+                    {f.company}
+                  </Link>
+                  <span className="text-gris-500 text-xs">{f.role}</span>
+                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-naranja/15 text-[#a85100] font-semibold">
+                    {f.status} · {f.daysSinceMovement}d sin movimiento
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {f.url && (
+                    <a href={f.url} target="_blank" rel="noreferrer" className="text-[12px] text-core-700 hover:underline flex items-center gap-1">
+                      <Icon name="open_in_new" size={13} /> Oferta
+                    </a>
+                  )}
+                  <Button variant="ghost" onClick={() => markFollowUpSent(f.applicationId)} className="text-xs">
+                    <Icon name="mark_email_read" size={13} className="mr-1" /> Marcar como enviado
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
         <div className="flex-1 flex items-center gap-2 rounded border border-gris-300 px-3">
           <Icon name="link" size={18} className="text-gris-500" />
@@ -229,6 +287,7 @@ export default function PipelineHome() {
                 <th className="px-3 py-2 w-12 text-[10px] uppercase tracking-wide font-semibold">#</th>
                 <th className="px-3 py-2 text-[10px] uppercase tracking-wide font-semibold">Empresa & Rol</th>
                 <th className="px-3 py-2 w-20 text-[10px] uppercase tracking-wide font-semibold">Score</th>
+                <th className="px-3 py-2 w-24 text-[10px] uppercase tracking-wide font-semibold text-center">CV adaptado</th>
                 <th className="px-3 py-2 w-44 text-[10px] uppercase tracking-wide font-semibold">Estado</th>
                 <th className="px-3 py-2 w-[280px] text-[10px] uppercase tracking-wide font-semibold">Línea de tiempo</th>
                 <th className="px-3 py-2 w-32 text-[10px] uppercase tracking-wide font-semibold">Acciones</th>
@@ -247,6 +306,7 @@ export default function PipelineHome() {
                         <div className="text-[10px] uppercase text-gris-500 mt-1">{p.source ?? 'manual'}</div>
                       </td>
                       <td className="px-3 py-3 text-gris-500">—</td>
+                      <td className="px-3 py-3 text-center text-gris-300">—</td>
                       <td className="px-3 py-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide border-l-2 ${STATUS_BADGE.Evaluated.tone}`}>
                           <Icon name={STATUS_BADGE.Evaluated.icon} size={12} /> Pendiente
@@ -289,6 +349,35 @@ export default function PipelineHome() {
                         <span className={`font-bold text-base ${scoreClass(scoreNum)}`}>{scoreNum.toFixed(1)}/5</span>
                       )}
                     </td>
+                    <td className="px-3 py-3 text-center">
+                      {a.cvTailoredUrl ? (
+                        <a
+                          href={a.cvTailoredUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Descargar CV adaptado (.docx) · ${a.cvTailoredCoverage ?? '?'}% cobertura`}
+                          className="inline-flex flex-col items-center gap-0.5 px-2 py-1.5 rounded bg-intel-50 hover:bg-intel-700 hover:text-white text-intel-700 transition-colors group"
+                        >
+                          <span className="flex items-center gap-1 text-[11px] font-semibold">
+                            <Icon name="article" size={14} /> Word
+                          </span>
+                          {a.cvTailoredCoverage && (
+                            <span className="text-[10px] font-bold opacity-90 group-hover:opacity-100">{a.cvTailoredCoverage}%</span>
+                          )}
+                        </a>
+                      ) : a.status === 'Evaluated' && a.url ? (
+                        <Link
+                          href={`/applications/${a.id}#cv-tailored`}
+                          title="Generar CV adaptado al JD"
+                          className="inline-flex flex-col items-center gap-0.5 px-2 py-1.5 rounded border border-dashed border-gris-300 hover:border-intel-700 text-gris-500 hover:text-intel-700 transition-colors"
+                        >
+                          <Icon name="auto_awesome" size={14} />
+                          <span className="text-[9px] uppercase tracking-wider">Generar</span>
+                        </Link>
+                      ) : (
+                        <span className="text-gris-300">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide border-l-2 ${badge.tone}`}>
                         <Icon name={badge.icon} size={12} /> {badge.label}
@@ -302,7 +391,7 @@ export default function PipelineHome() {
                         <a className="text-[12px] text-[#5b6c00] font-semibold pb-1 mb-1.5 border-b border-dashed border-gris-300 hover:underline flex items-center gap-1" href={a.url} target="_blank" rel="noreferrer"><Icon name="open_in_new" size={13} /> Ver oferta</a>
                       )}
                       <Link href={`/applications/${a.id}`} className="text-[12px] text-core-700 hover:underline flex items-center gap-1"><Icon name="description" size={13} /> Reporte</Link>
-                      {a.status === 'Interview' && <a href="#" className="text-[12px] text-naranja hover:underline flex items-center gap-1"><Icon name="psychology" size={13} /> Prep</a>}
+                      {a.status === 'Interview' && <Link href={`/applications/${a.id}#prep`} className="text-[12px] text-naranja hover:underline flex items-center gap-1"><Icon name="psychology" size={13} /> Playbook</Link>}
                       {a.status === 'Offer' && <a href="#" className="text-[12px] text-[#5b6c00] hover:underline flex items-center gap-1"><Icon name="handshake" size={13} /> Negociar</a>}
                       {(a.status === 'Applied' || a.status === 'Responded') && <a href="#" className="text-[12px] text-amarillo hover:underline flex items-center gap-1"><Icon name="mark_email_unread" size={13} /> Follow-up</a>}
                       <div className="mt-1 pt-1 border-t border-dashed border-gris-300 flex justify-end">

@@ -4,7 +4,7 @@
 // (e.g. for free-text job boards where keyword matching misses synonyms).
 
 import { z } from 'zod';
-import { callGemini } from './client.js';
+import { callGemini, pickModel } from './client.js';
 
 const PROMPT_VERSION = 'filterScan@1';
 
@@ -41,7 +41,7 @@ export async function filterScanResults(input: FilterScanInput) {
   ].join('\n');
 
   return callGemini<ScanFilter>({
-    model: process.env.GEMINI_MODEL_FLASH ?? 'gemini-2.5-flash',
+    model: pickModel('flash'),
     promptVersion: PROMPT_VERSION,
     systemPrompt: SYSTEM_PROMPT,
     userPrompt,

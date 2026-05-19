@@ -12,9 +12,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@career-ops/shared": "workspace:*",
     "@career-ops/db": "workspace:*",
+    "@career-ops/shared": "workspace:*",
     "@google/generative-ai": "^0.21.0",
+    "groq-sdk": "^1.2.0",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.23.5"
   },

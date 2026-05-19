@@ -9,7 +9,10 @@
     "dev:scanner": "tsx watch src/scanner.ts",
     "dev:evaluator": "tsx watch src/evaluator.ts",
     "dev:pdfgen": "tsx watch src/pdfgen.ts",
-    "dev:liveness": "tsx watch src/liveness.ts"
+    "dev:liveness": "tsx watch src/liveness.ts",
+    "dev:interview-prep": "dotenv -e ../../.env -- tsx watch src/interview-prep.ts",
+    "dev:tailor-cv": "dotenv -e ../../.env -- tsx watch src/tailor-cv.ts",
+    "dev:scheduler": "dotenv -e ../../.env -- tsx watch src/scheduler.ts"
   },
   "dependencies": {
     "@career-ops/db": "workspace:*",
@@ -18,13 +21,17 @@
     "@career-ops/scan-listings": "workspace:*",
     "@career-ops/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",
+    "docx": "^9.6.1",
     "drizzle-orm": "^0.36.0",
+    "marked": "^18.0.3",
+    "node-cron": "^4.2.1",
     "pg-boss": "^10.1.5",
     "playwright": "^1.48.0",
     "postgres": "^3.4.5"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
+    "@types/node-cron": "^3.0.11",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

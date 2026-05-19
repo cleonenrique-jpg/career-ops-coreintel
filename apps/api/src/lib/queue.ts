@@ -7,7 +7,7 @@ export const boss = new PgBoss({
   connectionString,
   schema: process.env.JOBS_SCHEMA ?? 'pgboss',
   supervise: false,
-  noScheduling: true,
+  schedule: false,
   application_name: 'career-ops-api',
 });
 
@@ -27,4 +27,5 @@ export const QUEUES = {
   evaluate: 'evaluate-pipeline-url',
   pdfgen: 'generate-pdf',
   interviewPrep: 'generate-interview-prep',
+  tailorCv: 'tailor-cv',
 } as const;

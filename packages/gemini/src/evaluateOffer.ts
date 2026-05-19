@@ -2,7 +2,7 @@
 // LLM produces structured JSON; the worker renders the markdown report from it.
 
 import { z } from 'zod';
-import { callGemini } from './client.js';
+import { callGemini, pickModel } from './client.js';
 
 const PROMPT_VERSION = 'oferta@1';
 
@@ -87,7 +87,7 @@ export async function evaluateOffer(input: EvaluateOfferInput) {
   ].join('\n');
 
   return callGemini<OfferEval>({
-    model: process.env.GEMINI_MODEL_PRO ?? 'gemini-2.5-pro',
+    model: pickModel('pro'),
     promptVersion: PROMPT_VERSION,
     systemPrompt: SYSTEM_PROMPT,
     userPrompt,
