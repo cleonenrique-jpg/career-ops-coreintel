@@ -110,7 +110,9 @@ function inferLanguage(dir: string | undefined): 'en' | 'es' | 'de' | 'fr' | 'ja
 async function migrateCv() {
   const md = await readMaybe(p('cv.md'));
   if (!md) { console.log('[migrate] no cv.md — skipping'); return; }
-  // Deactivate older versions, insert new active.
+  // Idempotent: skip if active CV already matches the file content.
+  const existing = await db.select().from(cvs).where(and(eq(cvs.userId, USER_ID!), eq(cvs.isActive, true)));
+  if (existing[0]?.contentMd === md) { console.log('[migrate] cv unchanged — skipping'); return; }
   await db.update(cvs).set({ isActive: false }).where(eq(cvs.userId, USER_ID!));
   await db.insert(cvs).values({ userId: USER_ID!, contentMd: md, isActive: true, version: 1 });
   console.log('[migrate] cv inserted');
@@ -210,24 +212,36 @@ async function migrateScanHistory() {
   const tsv = await readMaybe(p('data/scan-history.tsv'));
   if (!tsv) { console.log('[migrate] no scan-history.tsv — skipping'); return; }
 
-  let inserted = 0;
   const lines = tsv.split('\n').slice(1); // skip header
+  const rows = [] as Array<{
+    userId: string; url: string; company: string | null; title: string | null;
+    source: ScanSource; firstSeenAt: Date;
+  }>;
+
   for (const line of lines) {
     if (!line.trim()) continue;
     const [url, firstSeen, source, title, company] = line.split('\t');
     if (!url) continue;
-    const src = inferScanSource(source ?? '');
-    await db.insert(scanHistory).values({
+    rows.push({
       userId: USER_ID!,
       url,
       company: company || null,
       title: title || null,
-      source: src,
+      source: inferScanSource(source ?? ''),
       firstSeenAt: parseDate(firstSeen) ?? new Date(),
-    }).onConflictDoNothing();
-    inserted++;
+    });
   }
-  console.log(`[migrate] scan_history rows: ${inserted}`);
+
+  // Batch insert in chunks to keep statement size sane on the pooler.
+  const CHUNK = 500;
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const chunk = rows.slice(i, i + CHUNK);
+    await db.insert(scanHistory).values(chunk).onConflictDoNothing();
+    inserted += chunk.length;
+    console.log(`[migrate] scan_history progress: ${inserted}/${rows.length}`);
+  }
+  console.log(`[migrate] scan_history rows attempted: ${inserted}`);
 }
 
 function parseDate(s: string | undefined): Date | null {
