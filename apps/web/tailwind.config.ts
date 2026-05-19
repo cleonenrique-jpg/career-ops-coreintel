@@ -32,6 +32,14 @@ const config: Config = {
         amarillo: '#ffc00d',
         oliva:    '#9e9554',
         negro:    '#1d1e1c',
+        gris: {
+          50:  '#f8fafc',
+          100: '#f3f4f6',
+          300: '#d1d5db',
+          500: '#6b7280',
+          700: '#374151',
+          900: '#1f2937',
+        },
       },
       fontFamily: {
         sans: ['var(--font-montserrat)', 'system-ui', '-apple-system', 'sans-serif'],
