@@ -8,7 +8,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { Section } from '@/components/Section';
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatusBadge, STATUS_LABEL_ES } from '@/components/StatusBadge';
 import { api } from '@/lib/api';
 import { APPLICATION_STATUSES, type ApplicationStatus } from '@career-ops/shared';
 
@@ -128,8 +128,8 @@ export default function ApplicationDetail() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-h2 md:text-h1 text-intel-700">{a.company}</h1>
-          <p className="text-text-muted">{a.role}</p>
+          <h1 className="text-h3 text-intel-700">{a.company}</h1>
+          <p className="text-text-muted text-sm">{a.role}</p>
           <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
             <span className="text-gris-500">#{a.num} · {a.date}</span>
             <StatusBadge status={a.status} />
@@ -144,7 +144,7 @@ export default function ApplicationDetail() {
               onClick={() => updateStatus(s)}
               className="text-xs"
             >
-              {s}
+              {STATUS_LABEL_ES[s]}
             </Button>
           ))}
         </div>

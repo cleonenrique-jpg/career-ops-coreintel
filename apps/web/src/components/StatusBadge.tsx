@@ -11,10 +11,21 @@ const tone: Record<ApplicationStatus, string> = {
   SKIP:      'bg-gris-100 text-gris-500',
 };
 
+export const STATUS_LABEL_ES: Record<ApplicationStatus, string> = {
+  Evaluated: 'Pendiente',
+  Applied:   'Aplicada',
+  Responded: 'Contactada',
+  Interview: 'Entrevista',
+  Offer:     '¡Oferta!',
+  Rejected:  'Rechazada',
+  Discarded: 'Descartada',
+  SKIP:      'Mal match',
+};
+
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${tone[status]}`}>
-      {status}
+      {STATUS_LABEL_ES[status]}
     </span>
   );
 }
