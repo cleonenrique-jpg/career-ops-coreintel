@@ -79,30 +79,64 @@ select * from profiles;
 select * from cvs where is_active;
 ```
 
-## 4. Railway
+## 4. Railway — setup manual por service
 
-1. New Project → "Deploy from GitHub repo" → seleccioná `career-ops-cloud`.
-2. Railway detecta `railway.json` y crea 8 services:
-   - `api` — Hono REST API
-   - `web` — Next.js dashboard
-   - `worker-evaluator` — consume `evaluate-pipeline-url` queue (Groq calls)
-   - `worker-pdfgen` — legacy CV PDF generator (kept for backward compat)
-   - `worker-interview-prep` — generates playbook .docx
-   - `worker-tailor-cv` — generates JD-tailored CV .docx
-   - `worker-scheduler` — cron in-process; runs scanner every 4h + queues evaluator
-   - `worker-liveness` — Railway cron (daily 09:00 UTC) — re-checks pending URLs
-3. Para cada service → Variables → setear las del `.env` local. Railway recomienda usar "shared variables" (un set centralizado) y luego "referenciar" desde cada service. Mínimo necesario por service:
+**Railway moderno NO acepta el formato `services[]` array en `railway.json`** (lo ignora silenciosamente). Cada service se configura por separado vía UI. Por eso este repo no incluye `railway.json` — la verdad de la configuración vive abajo.
 
-   | Service                  | Variables relevantes                                                                                                                  |
-   |--------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-   | `api`                    | DATABASE_URL_POOLER, SUPABASE_* (incluyendo SERVICE_ROLE), DEFAULT_USER_ID, API_PORT                                                   |
-   | `web`                    | NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (estos se bakean en build → tienen que estar antes del deploy) |
-   | `worker-*`               | DATABASE_URL_POOLER, SUPABASE_*, DEFAULT_USER_ID, LLM_PROVIDER, GROQ_API_KEY, GROQ_MODEL_PRO, GROQ_MODEL_FLASH, STORAGE_BUCKET         |
-   | `worker-scheduler`       | Lo anterior + SCAN_CRON, FOLLOWUP_CHECK_CRON, AUTO_EVAL_NEW, SCAN_LIVENESS_CHECK                                                      |
-   | `worker-evaluator`/etc.  | Lo anterior — los workers comparten Dockerfile pero corren scripts distintos                                                          |
+### 4.1 Crear el proyecto
 
-4. Generar dominio público para `api` y `web`. (Service → Settings → Networking → Generate Domain).
-5. **CRÍTICO**: setear `NEXT_PUBLIC_API_URL` en el service `web` apuntando al dominio del service `api` antes del primer build, o el dashboard no podrá hablar con el API.
+1. **New Project** → "Empty Project" (o "Deploy from GitHub repo", da igual — vamos a configurar todo manual)
+2. En Project Settings → **Shared Variables** → cargás TODAS las del `.env` excepto las `NEXT_PUBLIC_*` y `API_PORT` (esas son service-specific).
+
+### 4.2 Crear cada service
+
+Repetí este flow **8 veces** (una por cada service del cuadro abajo):
+
+1. Canvas del proyecto → click **"+ New"** → **"GitHub Repo"** → seleccioná `career-ops-coreintel`
+2. Click sobre el service recién creado → **Settings** (engranaje)
+3. Seteá los 4 campos:
+   - **Service Name** (arriba): el nombre del service (ej. `api`, `worker-scheduler`)
+   - **Source → Root Directory**: `/` (raíz)
+   - **Build → Builder**: `Dockerfile`
+   - **Build → Dockerfile Path**: ver tabla abajo
+   - **Deploy → Custom Start Command**: ver tabla abajo
+4. **Variables** → "Reference Shared Variable" → seleccioná todas las shared (multi-select)
+5. Para `api` y `web` también: **Settings → Networking → Generate Domain**
+6. Click **Deploy** arriba a la derecha
+
+### 4.3 Cuadro maestro de services
+
+| # | Service Name | Dockerfile Path | Start Command | Public Domain | Cron |
+|---|---|---|---|---|---|
+| 1 | `api` | `docker/api.Dockerfile` | `node apps/api/dist/index.js` | **Sí** | — |
+| 2 | `web` | `docker/web.Dockerfile` | `node apps/web/server.js` | **Sí** | — |
+| 3 | `worker-evaluator` | `docker/workers.Dockerfile` | `node apps/workers/dist/evaluator.js` | No | — |
+| 4 | `worker-pdfgen` | `docker/workers.Dockerfile` | `node apps/workers/dist/pdfgen.js` | No | — |
+| 5 | `worker-interview-prep` | `docker/workers.Dockerfile` | `node apps/workers/dist/interview-prep.js` | No | — |
+| 6 | `worker-tailor-cv` | `docker/workers.Dockerfile` | `node apps/workers/dist/tailor-cv.js` | No | — |
+| 7 | `worker-scheduler` | `docker/workers.Dockerfile` | `node apps/workers/dist/scheduler.js` | No | — |
+| 8 | `worker-liveness` | `docker/workers.Dockerfile` | `node apps/workers/dist/liveness.js` | No | `0 9 * * *` (Settings → Cron Schedule) |
+
+### 4.4 Variables service-specific (NO shared)
+
+| Service | Variables propias |
+|---|---|
+| `api` | `API_PORT=3001`, `HEALTHCHECK_PATH=/health` |
+| `web` | `NEXT_PUBLIC_API_URL=<URL pública del api>` (setear DESPUÉS de generar dominio del `api`) ⚠️ se bakean en build · `NEXT_PUBLIC_SUPABASE_URL=...` · `NEXT_PUBLIC_SUPABASE_ANON_KEY=...` |
+| `worker-*` | ninguna — sólo references a shared |
+
+### 4.5 Orden recomendado de deploy
+
+1. **`api` primero** (necesitás su dominio público para configurar `web`)
+2. Generar dominio del `api` → copiar URL
+3. **`web` segundo** — en sus Variables, agregar `NEXT_PUBLIC_API_URL=<URL del api>` → deploy
+4. **`worker-scheduler`** tercero (arranca el cron que dispara scans)
+5. **`worker-evaluator`** cuarto (consume cola de evals)
+6. El resto en cualquier orden
+
+### 4.6 Tip: duplicate para los workers
+
+Una vez que tengas `worker-evaluator` configurado y deployando OK, **click derecho sobre el service → Duplicate**. Cambiás solo el nombre + Start Command. Reusa el mismo Dockerfile path y variables refs. Mucho más rápido que crear 5 services desde cero.
 
 ## 5. Verificación end-to-end
 

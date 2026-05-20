@@ -128,9 +128,9 @@ export default function ApplicationDetail() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-h3 text-intel-700">{a.company}</h1>
-          <p className="text-text-muted text-sm">{a.role}</p>
-          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+          <h1 className="text-lg font-bold text-intel-700 leading-tight">{a.company}</h1>
+          <p className="text-text-muted text-xs">{a.role}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
             <span className="text-gris-500">#{a.num} · {a.date}</span>
             <StatusBadge status={a.status} />
             {a.score && <span className="font-semibold text-core-700">{a.score}/5</span>}

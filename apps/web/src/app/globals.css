@@ -34,14 +34,20 @@ body { font-feature-settings: "ss01" on, "cv01" on; }
 a { color: var(--color-primary-hover); }
 a:hover { text-decoration: underline; }
 
-/* Markdown body inside reports */
-.prose-coreintel h1 { @apply text-h2 text-intel mt-8 mb-3; }
-.prose-coreintel h2 { @apply text-h3 text-intel mt-6 mb-2; }
-.prose-coreintel h3 { @apply text-h4 text-intel mt-4 mb-2; }
-.prose-coreintel p  { @apply my-3 text-negro/90; }
-.prose-coreintel ul { @apply list-disc pl-6 my-3; }
-.prose-coreintel ol { @apply list-decimal pl-6 my-3; }
-.prose-coreintel table { @apply w-full border-collapse my-4 text-sm; }
-.prose-coreintel th, .prose-coreintel td { @apply border border-gris-300 px-3 py-1.5; }
-.prose-coreintel th { @apply bg-intel-50 text-intel-700 text-left; }
-.prose-coreintel code { @apply bg-gris-100 px-1.5 py-0.5 rounded text-sm; }
+/* Markdown body inside reports — dashboard-density typography */
+.prose-coreintel { @apply text-sm text-negro/90 leading-relaxed; }
+.prose-coreintel h1 { @apply text-h3 text-intel mt-4 mb-2; }
+.prose-coreintel h2 { @apply text-h4 text-intel mt-3 mb-1.5; }
+.prose-coreintel h3 { @apply text-h5 text-intel mt-2.5 mb-1; }
+.prose-coreintel h4 { @apply text-sm font-semibold text-intel mt-2 mb-1; }
+.prose-coreintel p  { @apply my-2; }
+.prose-coreintel ul { @apply list-disc pl-5 my-2; }
+.prose-coreintel ol { @apply list-decimal pl-5 my-2; }
+.prose-coreintel li { @apply my-0.5; }
+.prose-coreintel strong { @apply text-intel-700; }
+.prose-coreintel blockquote { @apply border-l-2 border-l-intel-700 pl-3 py-0.5 my-2 text-gris-700 italic; }
+.prose-coreintel hr { @apply border-gris-300 my-3; }
+.prose-coreintel table { @apply w-full border-collapse my-3 text-xs; }
+.prose-coreintel th, .prose-coreintel td { @apply border border-gris-300 px-2 py-1; }
+.prose-coreintel th { @apply bg-intel-50 text-intel-700 text-left font-semibold; }
+.prose-coreintel code { @apply bg-gris-100 px-1.5 py-0.5 rounded text-xs; }

@@ -45,12 +45,14 @@ const config: Config = {
         sans: ['var(--font-montserrat)', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
+      // Dashboard-style compact sizes. Old marketing-page sizes (h1=2.5rem, h2=2rem,
+      // h3=1.5rem) made every page feel huge. These are tuned for SaaS density.
       fontSize: {
-        h1: ['2.5rem', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
-        h2: ['2rem',   { lineHeight: '1.2',  letterSpacing: '-0.015em', fontWeight: '700' }],
-        h3: ['1.5rem', { lineHeight: '1.3',  letterSpacing: '-0.01em', fontWeight: '600' }],
-        h4: ['1.25rem',{ lineHeight: '1.35', fontWeight: '600' }],
-        h5: ['1rem',   { lineHeight: '1.4',  fontWeight: '600' }],
+        h1: ['1.5rem',  { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '700' }],   // 24px
+        h2: ['1.25rem', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '700' }],   // 20px
+        h3: ['1.0625rem',{ lineHeight: '1.35', fontWeight: '600' }],                              // 17px
+        h4: ['0.9375rem',{ lineHeight: '1.4',  fontWeight: '600' }],                              // 15px
+        h5: ['0.8125rem',{ lineHeight: '1.45', fontWeight: '600' }],                              // 13px
       },
       borderRadius: { sm: '4px', DEFAULT: '8px', md: '8px', lg: '12px', xl: '16px' },
     },

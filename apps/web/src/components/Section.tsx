@@ -23,12 +23,12 @@ export function Section({ id, title, subtitle, defaultOpen = true, children }: S
         aria-expanded={open}
       >
         <div>
-          <h2 className="text-h3 text-intel-700 group-hover:underline decoration-1 underline-offset-4">{title}</h2>
-          {subtitle && <p className="text-sm text-gris-500">{subtitle}</p>}
+          <h2 className="text-base font-semibold text-intel-700 group-hover:underline decoration-1 underline-offset-4">{title}</h2>
+          {subtitle && <p className="text-xs text-gris-500 mt-0.5">{subtitle}</p>}
         </div>
         <Icon
           name="expand_more"
-          size={24}
+          size={20}
           className={`text-intel-700 flex-shrink-0 transition-transform ${open ? '' : '-rotate-90'}`}
         />
       </button>
