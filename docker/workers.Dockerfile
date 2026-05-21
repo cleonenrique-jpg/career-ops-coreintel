@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/playwright:v1.48.0-jammy AS base
-RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
+RUN npm install -g pnpm@10.15.1
 WORKDIR /app
 
 FROM base AS deps
