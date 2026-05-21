@@ -31,6 +31,10 @@ export const jobStateEnum = pgEnum('job_state', [
   'pending', 'in_progress', 'completed', 'failed', 'cancelled',
 ]);
 
+export const userRoleEnum = pgEnum('user_role', ['admin', 'member']);
+
+export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'suspended']);
+
 // ── Tables ───────────────────────────────────────────────────────────
 
 export const profiles = pgTable('profiles', {
@@ -50,6 +54,8 @@ export const profiles = pgTable('profiles', {
   compTargetMax: integer('comp_target_max'),
   compCurrency: text('comp_currency').notNull().default('USD'),
   languageMode: languageEnum('language_mode').notNull().default('es'),
+  role: userRoleEnum('role').notNull().default('member'),
+  status: userStatusEnum('status').notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
