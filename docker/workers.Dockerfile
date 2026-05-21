@@ -12,8 +12,7 @@ COPY packages/scan-listings/package.json packages/scan-listings/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
 
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
+FROM deps AS build
 COPY . .
 RUN pnpm --filter @career-ops/shared build && \
     pnpm --filter @career-ops/db build && \
