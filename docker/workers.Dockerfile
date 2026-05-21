@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.48.0-jammy AS base
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS base
 RUN npm install -g pnpm@10.15.1
 WORKDIR /app
 
