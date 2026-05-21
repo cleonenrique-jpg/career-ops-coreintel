@@ -25,6 +25,7 @@ FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/workers/dist ./apps/workers/dist
+COPY --from=build /app/apps/workers/node_modules ./apps/workers/node_modules
 COPY --from=build /app/apps/workers/package.json ./apps/workers/
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/templates ./templates
