@@ -27,7 +27,7 @@ app.route('/api/scan', scanRoute);
 app.route('/api/metrics', metricsRoute);
 app.route('/api/follow-ups', followUpsRoute);
 
-const port = Number(process.env.API_PORT ?? 3001);
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`[api] listening on http://localhost:${port}`);
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {
+  console.log(`[api] listening on http://0.0.0.0:${port}`);
 });
