@@ -8,6 +8,7 @@ import { profileRoute } from './routes/profile.js';
 import { scanRoute } from './routes/scan.js';
 import { metricsRoute } from './routes/metrics.js';
 import { followUpsRoute } from './routes/follow-ups.js';
+import { adminRoute } from './routes/admin.js';
 
 const app = new Hono();
 app.use('*', logger());
@@ -26,6 +27,7 @@ app.route('/api/profile', profileRoute);
 app.route('/api/scan', scanRoute);
 app.route('/api/metrics', metricsRoute);
 app.route('/api/follow-ups', followUpsRoute);
+app.route('/api/admin', adminRoute);
 
 const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
 serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {

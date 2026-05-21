@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Header } from '@/components/Header';
+import { serverSupabase } from '@/lib/supabase-server';
 import './globals.css';
 
 const montserrat = Montserrat({
@@ -16,7 +17,19 @@ export const metadata: Metadata = {
   icons: { icon: '/brand/logo-icon.png' },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const supabase = serverSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  let role: 'admin' | 'member' | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    role = (profile?.role as 'admin' | 'member' | undefined) ?? null;
+  }
+
   return (
     <html lang="es" className={montserrat.variable}>
       <head>
@@ -26,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans bg-[var(--color-bg-subtle)] min-h-screen">
-        <Header />
+        <Header email={user?.email ?? null} role={role} />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
       </body>
     </html>

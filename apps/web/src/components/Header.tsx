@@ -14,9 +14,10 @@ const navItems = [
 
 interface Props {
   email?: string | null;
+  role?: 'admin' | 'member' | null;
 }
 
-export function Header({ email = null }: Props) {
+export function Header({ email = null, role = null }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -50,7 +51,7 @@ export function Header({ email = null }: Props) {
         </nav>
 
         <div className="hidden md:block">
-          <UserMenu email={email} />
+          <UserMenu email={email} role={role} />
         </div>
 
         <button
@@ -81,7 +82,7 @@ export function Header({ email = null }: Props) {
             </Link>
           ))}
           <div className="px-6 py-3 border-b border-gris-100">
-            <UserMenu email={email} />
+            <UserMenu email={email} role={role} />
           </div>
         </nav>
       )}

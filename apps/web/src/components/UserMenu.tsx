@@ -6,9 +6,10 @@ import { createBrowserClient } from '@supabase/ssr';
 
 interface Props {
   email: string | null;
+  role?: 'admin' | 'member' | null;
 }
 
-export function UserMenu({ email }: Props) {
+export function UserMenu({ email, role = null }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,7 +50,7 @@ export function UserMenu({ email }: Props) {
           {email && (
             <div className="px-3 py-2 border-b border-gris-300 text-xs text-gris-500">
               <div className="truncate text-intel-700 font-semibold">{email}</div>
-              <div>Single-tenant</div>
+              {role && <div className="capitalize">{role}</div>}
             </div>
           )}
           <Link
@@ -57,13 +58,22 @@ export function UserMenu({ email }: Props) {
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm text-intel-700 hover:bg-intel-50"
           >
-            👤 Mi perfil
+            Mi perfil
           </Link>
+          {role === 'admin' && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm text-intel-700 hover:bg-intel-50"
+            >
+              Administración
+            </Link>
+          )}
           <button
             onClick={logout}
             className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50"
           >
-            🚪 Salir
+            Salir
           </button>
         </div>
       )}
