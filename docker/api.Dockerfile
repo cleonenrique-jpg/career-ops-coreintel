@@ -1,5 +1,5 @@
 FROM node:20-bookworm-slim AS base
-RUN corepack enable && corepack prepare pnpm@11.1.3 --activate
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate
 WORKDIR /app
 
 FROM base AS deps
