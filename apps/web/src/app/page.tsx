@@ -2,13 +2,10 @@
 
 import { useEffect, useMemo, useState, Fragment } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
-import { Icon } from '@/components/Icon';
 import { Timeline, buildTimeline } from '@/components/Timeline';
 import { RowMenu } from '@/components/RowMenu';
 import { api } from '@/lib/api';
-import { APPLICATION_STATUSES, type ApplicationStatus } from '@career-ops/shared';
+import { type ApplicationStatus } from '@career-ops/shared';
 
 interface AppRow {
   id: string;
@@ -53,22 +50,22 @@ interface FollowUpItem {
 
 type QuickFilter = 'all' | 'active' | 'applied' | 'interview' | 'offer' | 'closed' | 'high';
 
-const STATUS_BADGE: Record<ApplicationStatus, { tone: string; icon: string; label: string }> = {
-  Evaluated: { tone: 'bg-gris-100 text-gris-700',                  icon: 'inbox',     label: 'Pendiente' },
-  Applied:   { tone: 'bg-core/10 text-core-700',                   icon: 'send',      label: 'Aplicada' },
-  Responded: { tone: 'bg-amarillo/15 text-[#7a5d00]',              icon: 'forum',     label: 'Contactada' },
-  Interview: { tone: 'bg-naranja/15 text-[#a85100]',               icon: 'mic',       label: 'Entrevista' },
-  Offer:     { tone: 'bg-lima/20 text-[#5b6c00]',                  icon: 'redeem',    label: '¡Oferta!' },
-  Rejected:  { tone: 'bg-red-100 text-red-700',                    icon: 'block',     label: 'Rechazada' },
-  Discarded: { tone: 'bg-gris-100 text-gris-500',                  icon: 'archive',   label: 'Descartada' },
-  SKIP:      { tone: 'bg-gris-100 text-gris-500',                  icon: 'do_not_disturb_on', label: 'SKIP' },
+const STATUS_PILL: Record<ApplicationStatus, { bg: string; text: string; label: string }> = {
+  Evaluated: { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Pendiente' },
+  Applied:   { bg: 'bg-[#E1F3FE]', text: 'text-[#1F6C9F]', label: 'Aplicada' },
+  Responded: { bg: 'bg-[#FBF3DB]', text: 'text-[#7a5d00]', label: 'Contactada' },
+  Interview: { bg: 'bg-[#FDE9D7]', text: 'text-[#a85100]', label: 'Entrevista' },
+  Offer:     { bg: 'bg-[#EDF3EC]', text: 'text-[#346538]', label: 'Oferta' },
+  Rejected:  { bg: 'bg-[#FDEBEC]', text: 'text-[#9F2F2D]', label: 'Rechazada' },
+  Discarded: { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Descartada' },
+  SKIP:      { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Skip' },
 };
 
 function scoreColor(score: number | null): string {
-  if (score == null) return 'text-gris-400';
-  if (score >= 4.0) return 'text-[#5b6c00]';
-  if (score >= 3.0) return 'text-naranja';
-  return 'text-red-600';
+  if (score == null) return 'text-gris-300';
+  if (score >= 4.0) return 'text-[#346538]';
+  if (score >= 3.0) return 'text-[#a85100]';
+  return 'text-[#9F2F2D]';
 }
 
 export default function PipelineHome() {
@@ -104,7 +101,6 @@ export default function PipelineHome() {
 
   const activeFollowUpIds = useMemo(() => new Set(followUps.map((f) => f.applicationId)), [followUps]);
 
-  // Sort apps by score DESC (default), then by date DESC
   const sortedApps = useMemo(() => {
     return [...apps].sort((a, b) => {
       const sa = a.score ? Number(a.score) : -1;
@@ -114,14 +110,12 @@ export default function PipelineHome() {
     });
   }, [apps]);
 
-  // Combine apps + pending pipeline rows
   const allRows = useMemo(() => {
     const fromApps = sortedApps.map((a) => ({ kind: 'app' as const, app: a, pipeline: null as PipelineRow | null }));
     const fromPending = pending.map((p) => ({ kind: 'pending' as const, app: null as AppRow | null, pipeline: p }));
     return [...fromApps, ...fromPending];
   }, [sortedApps, pending]);
 
-  // Filtering — search now includes notes too
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allRows.filter((r) => {
@@ -151,7 +145,6 @@ export default function PipelineHome() {
         await api.post('/api/pipeline/evaluate', { ids: [r.item.id] });
         setNewUrl('');
         await load();
-        alert('URL agregada y enviada a evaluar.');
       } else {
         alert('No se pudo agregar (probablemente ya está en el pipeline).');
       }
@@ -174,287 +167,338 @@ export default function PipelineHome() {
     await load();
   }
 
-  const topMatch = useMemo(() => sortedApps.find((a) => a.score && Number(a.score) >= 4.0), [sortedApps]);
+  const stats = [
+    { key: 'active' as QuickFilter, label: 'Pendientes', value: counts.Evaluated + pending.length },
+    { key: 'applied' as QuickFilter, label: 'Aplicadas', value: counts.Applied + counts.Responded },
+    { key: 'interview' as QuickFilter, label: 'Entrevistas', value: counts.Interview },
+    { key: 'offer' as QuickFilter, label: 'Ofertas', value: counts.Offer },
+    { key: 'closed' as QuickFilter, label: 'Cerradas', value: counts.Rejected + counts.SKIP + counts.Discarded },
+  ];
 
   return (
-    <div className="space-y-4">
-      {followUps.length > 0 && (
-        <Card className="border-l-4 border-l-amarillo bg-amarillo/5 py-3 px-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Icon name="schedule" size={16} className="text-amarillo" />
-            <h3 className="font-semibold text-intel-700 text-sm">Follow-ups pendientes ({followUps.length})</h3>
+    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
+      <div className="max-w-6xl mx-auto space-y-12">
+
+        <header className="space-y-3">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
+            Coreintel · Career Ops
           </div>
-          <div className="space-y-1.5">
-            {followUps.map((f) => (
-              <div key={f.applicationId} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-3">
-                  <Link href={`/applications/${f.applicationId}`} className="font-semibold text-intel-700 hover:underline">{f.company}</Link>
-                  <span className="text-gris-500 text-xs">{f.role}</span>
-                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-naranja/15 text-[#a85100] font-semibold">
-                    {f.status} · {f.daysSinceMovement}d sin movimiento
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {f.url && (
-                    <a href={f.url} target="_blank" rel="noreferrer" className="text-xs text-core-700 hover:underline flex items-center gap-1">
-                      <Icon name="open_in_new" size={12} /> Oferta
-                    </a>
-                  )}
-                  <Button variant="ghost" onClick={() => markFollowUpSent(f.applicationId)} className="text-xs">
-                    <Icon name="mark_email_read" size={13} className="mr-1" /> Marcar enviado
-                  </Button>
-                </div>
+          <h1 className="text-5xl md:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
+            Pipeline
+          </h1>
+          <p className="text-base text-gris-500 max-w-xl leading-relaxed">
+            Ofertas evaluadas, aplicaciones en curso y follow-ups pendientes.
+          </p>
+        </header>
+
+        {/* KPIs */}
+        <section className="grid grid-cols-2 md:grid-cols-5 gap-px bg-[#EAEAEA] border border-[#EAEAEA] rounded-xl overflow-hidden">
+          {stats.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setFilter(filter === s.key ? 'all' : s.key)}
+              className={`text-left px-5 py-5 transition-colors ${
+                filter === s.key ? 'bg-intel-700 text-white' : 'bg-white hover:bg-[#FBFBFA]'
+              }`}
+            >
+              <div className={`text-[10px] uppercase tracking-[0.18em] font-medium mb-1 ${
+                filter === s.key ? 'text-white/70' : 'text-gris-500'
+              }`}>
+                {s.label}
               </div>
-            ))}
+              <div className={`text-3xl font-bold tabular-nums ${
+                filter === s.key ? 'text-white' : 'text-intel-700'
+              }`}>
+                {loading ? '—' : s.value}
+              </div>
+            </button>
+          ))}
+        </section>
+
+        {/* Follow-ups alert */}
+        {followUps.length > 0 && (
+          <section className="bg-[#FBF3DB] border border-[#F4E4B0] rounded-xl p-6">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#7a5d00] font-semibold">
+                Follow-ups pendientes <span className="opacity-60">·</span> {followUps.length}
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {followUps.map((f) => (
+                <div key={f.applicationId} className="flex flex-wrap items-center justify-between gap-2 text-sm py-2 border-t border-[#F4E4B0]/60 first:border-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Link href={`/applications/${f.applicationId}`} className="font-medium text-intel-700 hover:underline">{f.company}</Link>
+                    <span className="text-gris-500 text-xs">{f.role}</span>
+                    <span className="text-[10px] uppercase tracking-[0.1em] font-semibold text-[#7a5d00] font-mono">
+                      {f.daysSinceMovement}d sin movimiento
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {f.url && (
+                      <a href={f.url} target="_blank" rel="noreferrer" className="text-xs text-intel-700 hover:underline">
+                        Oferta ↗
+                      </a>
+                    )}
+                    <button
+                      onClick={() => markFollowUpSent(f.applicationId)}
+                      className="px-3 py-1 text-xs font-medium rounded border border-[#F4E4B0] text-[#7a5d00] hover:bg-white active:scale-[0.98] transition"
+                    >
+                      Marcar enviado
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* URL input + Scan */}
+        <section>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
+              Agregar oferta
+            </h2>
           </div>
-        </Card>
-      )}
-
-      <Card className="py-2.5 px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex-1 min-w-[260px] flex items-center gap-1.5 rounded border border-gris-300 px-2.5">
-            <Icon name="link" size={14} className="text-gris-500" />
-            <input
-              type="text"
-              value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') addUrl(); }}
-              placeholder="Pegar URL de oferta (LinkedIn / Computrabajo / PROCOMER / Talent.com / CINDE)…"
-              className="flex-1 py-1.5 text-sm outline-none"
-            />
+          <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[280px]">
+                <label className="block text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
+                  URL de oferta
+                </label>
+                <input
+                  type="text"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addUrl(); }}
+                  placeholder="LinkedIn / Computrabajo / PROCOMER / Talent.com / CINDE…"
+                  className="w-full border-0 border-b border-[#EAEAEA] bg-transparent px-0 py-2 text-base text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 transition-colors"
+                />
+              </div>
+              <button
+                onClick={addUrl}
+                disabled={!newUrl.trim() || adding}
+                className="px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+              >
+                {adding ? 'Encolando…' : 'Agregar'}
+              </button>
+              <button
+                onClick={runScan}
+                className="px-5 py-2 text-sm font-medium rounded-md border border-[#EAEAEA] text-intel-700 hover:bg-[#F5F5F7] active:scale-[0.98] transition"
+              >
+                Scan ahora
+              </button>
+            </div>
           </div>
-          <Button onClick={addUrl} disabled={!newUrl.trim() || adding} className="text-sm gap-1.5">
-            <Icon name={adding ? 'hourglass_top' : 'add'} size={14} />
-            {adding ? 'Encolando…' : 'Agregar'}
-          </Button>
-          <Button variant="secondary" onClick={runScan} className="text-sm gap-1.5">
-            <Icon name="search" size={14} /> Scan
-          </Button>
-        </div>
-      </Card>
+        </section>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        {(counts.Evaluated + pending.length) > 0 && (
-          <StatChip label="Pendientes" value={counts.Evaluated + pending.length} icon="inbox" accent="text-gris-700" onClick={() => setFilter(filter === 'active' ? 'all' : 'active')} active={filter === 'active'} />
-        )}
-        {counts.Applied + counts.Responded > 0 && (
-          <StatChip label="Aplicadas" value={counts.Applied + counts.Responded} icon="send" accent="text-core-700" onClick={() => setFilter(filter === 'applied' ? 'all' : 'applied')} active={filter === 'applied'} />
-        )}
-        {counts.Interview > 0 && (
-          <StatChip label="Entrevista" value={counts.Interview} icon="mic" accent="text-naranja" onClick={() => setFilter(filter === 'interview' ? 'all' : 'interview')} active={filter === 'interview'} />
-        )}
-        {counts.Offer > 0 && (
-          <StatChip label="Ofertas" value={counts.Offer} icon="redeem" accent="text-[#5b6c00]" onClick={() => setFilter(filter === 'offer' ? 'all' : 'offer')} active={filter === 'offer'} />
-        )}
-        {(counts.Rejected + counts.SKIP + counts.Discarded) > 0 && (
-          <StatChip label="Cerradas" value={counts.Rejected + counts.SKIP + counts.Discarded} icon="block" accent="text-red-600" onClick={() => setFilter(filter === 'closed' ? 'all' : 'closed')} active={filter === 'closed'} />
-        )}
-
-        <div className="ml-auto flex items-center gap-2">
-          <button onClick={() => setFilter('all')} className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${filter === 'all' ? 'bg-intel-700 text-white border-intel-700' : 'border-gris-300 text-gris-500 hover:border-intel-700'}`}>
+        {/* Filters + Search */}
+        <section className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setFilter('all')}
+            className={`text-xs px-3 py-1.5 rounded-full border transition ${
+              filter === 'all' ? 'bg-intel-700 text-white border-intel-700' : 'border-[#EAEAEA] text-gris-500 hover:border-intel-700 hover:text-intel-700'
+            }`}
+          >
             Todas
           </button>
-          <button onClick={() => setFilter(filter === 'high' ? 'all' : 'high')} className={`text-xs px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 ${filter === 'high' ? 'bg-[#5b6c00] text-white border-[#5b6c00]' : 'border-gris-300 text-gris-500 hover:border-[#5b6c00]'}`}>
-            <Icon name="star" size={11} /> Score ≥ 4.0
+          <button
+            onClick={() => setFilter(filter === 'high' ? 'all' : 'high')}
+            className={`text-xs px-3 py-1.5 rounded-full border transition ${
+              filter === 'high' ? 'bg-[#346538] text-white border-[#346538]' : 'border-[#EAEAEA] text-gris-500 hover:border-[#346538] hover:text-[#346538]'
+            }`}
+          >
+            Score ≥ 4.0
           </button>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar empresa, rol, notas…"
-            className="rounded border border-gris-300 px-2.5 py-1 text-xs w-[220px]"
-          />
-        </div>
-      </div>
+          <div className="ml-auto">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar empresa, rol, notas…"
+              className="border border-[#EAEAEA] rounded-md bg-white px-3 py-1.5 text-xs text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 w-[240px] transition-colors"
+            />
+          </div>
+        </section>
 
-      <Card className="p-0 overflow-x-auto">
-        {loading ? (
-          <div className="p-6 text-gris-500 text-sm">Cargando…</div>
-        ) : filtered.length === 0 ? (
-          <EmptyState filter={filter} topMatch={topMatch ?? null} />
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-intel-50 text-intel-700 text-left">
-              <tr>
-                <th className="px-3 py-2 w-10 text-[10px] uppercase tracking-wide font-semibold">#</th>
-                <th className="px-3 py-2 text-[10px] uppercase tracking-wide font-semibold">Empresa & Rol</th>
-                <th className="px-3 py-2 w-32 text-[10px] uppercase tracking-wide font-semibold">Estado</th>
-                <th className="px-3 py-2 w-24 text-[10px] uppercase tracking-wide font-semibold text-center">CV adaptado</th>
-                <th className="px-3 py-2 w-12"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => {
-                if (r.kind === 'pending') {
-                  const p = r.pipeline!;
-                  return (
-                    <tr key={`p-${p.id}`} className="border-t border-gris-300/60 hover:bg-intel-50/30 align-middle">
-                      <td className="px-3 py-2.5 text-gris-500">—</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-semibold text-intel-700">{p.company ?? '—'}</span>
-                          <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-gris-100 text-gris-500 font-semibold">
-                            {p.source ?? 'manual'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-negro/70">{p.title ?? '—'}</div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide ${STATUS_BADGE.Evaluated.tone}`}>
-                          <Icon name={STATUS_BADGE.Evaluated.icon} size={12} /> Pendiente
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center text-gris-300">—</td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        <button onClick={() => api.post('/api/pipeline/evaluate', { ids: [p.id] }).then(load)} className="text-[11px] text-core-700 hover:underline mr-2">Evaluar</button>
-                        <button onClick={() => discardPending(p.id)} className="text-[11px] text-red-600 hover:underline">Descartar</button>
-                      </td>
-                    </tr>
-                  );
-                }
-                const a = r.app!;
-                const scoreNum = a.score ? Number(a.score) : null;
-                const badge = STATUS_BADGE[a.status];
-                const expanded = expandedId === a.id;
-                const tl = buildTimeline({ status: a.status, date: a.date, updatedAt: a.updatedAt, score: scoreNum });
-                return (
-                  <Fragment key={`a-${a.id}`}>
-                    <tr className="border-t border-gris-300/60 hover:bg-intel-50/30 align-middle">
-                      <td className="px-3 py-2.5 text-gris-500">{a.num}</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <Link href={`/applications/${a.id}`} className="font-semibold text-intel-700 hover:underline">
-                            {a.company}
-                          </Link>
-                          {scoreNum != null && (
-                            <span className={`font-bold text-base ${scoreColor(scoreNum)}`}>{scoreNum.toFixed(1)}</span>
-                          )}
-                          {activeFollowUpIds.has(a.id) && (
-                            <span className="text-[9px] uppercase px-1 py-0.5 rounded bg-amarillo/20 text-[#7a5d00] font-bold">
-                              Follow-up
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-negro/70">{a.role}</div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wide ${badge.tone}`}>
-                          <Icon name={badge.icon} size={12} /> {badge.label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        {a.cvTailoredUrl ? (
-                          <a href={a.cvTailoredUrl} target="_blank" rel="noreferrer" title={`Descargar Word · ${a.cvTailoredCoverage ?? '?'}% cobertura`}
-                             className="inline-flex items-center gap-1 px-2 py-1 rounded bg-intel-50 hover:bg-intel-700 hover:text-white text-intel-700 text-xs font-semibold transition-colors">
-                            <Icon name="article" size={13} /> {a.cvTailoredCoverage}%
-                          </a>
-                        ) : a.status === 'Evaluated' ? (
-                          <Link href={`/applications/${a.id}#cv-tailored`} className="inline-flex items-center gap-1 px-2 py-1 rounded border border-dashed border-gris-300 text-gris-500 hover:border-intel-700 hover:text-intel-700 text-xs">
-                            <Icon name="auto_awesome" size={12} /> Generar
-                          </Link>
-                        ) : (
-                          <span className="text-gris-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-right">
-                        <button
-                          onClick={() => setExpandedId(expanded ? null : a.id)}
-                          className="text-gris-500 hover:text-intel-700 p-1"
-                          title={expanded ? 'Colapsar' : 'Ver línea de tiempo'}
-                        >
-                          <Icon name={expanded ? 'expand_less' : 'expand_more'} size={20} />
-                        </button>
-                      </td>
-                    </tr>
-                    {expanded && (
-                      <tr className="bg-intel-50/30 border-t border-gris-300/40">
-                        <td colSpan={5} className="px-6 py-3">
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <div className="text-[10px] uppercase text-gris-500 font-semibold mb-1">Línea de tiempo</div>
-                              <Timeline steps={tl.steps} summary={tl.summary} summaryTone={tl.tone} />
+        {/* Table */}
+        <section>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
+              Aplicaciones <span className="text-gris-300">·</span> {filtered.length}
+            </h2>
+          </div>
+
+          <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
+            {loading ? (
+              <div className="px-6 py-12 text-center text-gris-500 text-sm">Cargando…</div>
+            ) : filtered.length === 0 ? (
+              <div className="px-6 py-16 text-center text-gris-500 text-sm">Sin resultados para este filtro.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#EAEAEA]">
+                    <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium w-12">#</th>
+                    <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Empresa & Rol</th>
+                    <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium w-20">Score</th>
+                    <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium w-32">Estado</th>
+                    <th className="text-center px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium w-28">CV adaptado</th>
+                    <th className="text-right px-6 py-4 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r, idx) => {
+                    const isLast = idx === filtered.length - 1;
+                    if (r.kind === 'pending') {
+                      const p = r.pipeline!;
+                      return (
+                        <tr key={`p-${p.id}`} className={`${!isLast ? 'border-b border-[#F3F3F1]' : ''} hover:bg-[#FBFBFA] transition-colors`}>
+                          <td className="px-6 py-4 text-gris-300">—</td>
+                          <td className="px-3 py-4">
+                            <div className="font-medium text-intel-700 flex items-center gap-2 flex-wrap">
+                              {p.company ?? '—'}
+                              <span className="text-[10px] uppercase tracking-[0.1em] text-gris-500 font-semibold">{p.source ?? 'manual'}</span>
                             </div>
-                            <div>
-                              <div className="text-[10px] uppercase text-gris-500 font-semibold mb-1">Notas eval</div>
-                              <p className="text-xs text-negro/80 leading-relaxed">{a.notes ?? '—'}</p>
-                              <div className="mt-2 flex flex-wrap gap-2 items-center">
-                                {a.url && (
-                                  <a href={a.url} target="_blank" rel="noreferrer" className="text-[11px] text-core-700 hover:underline flex items-center gap-1">
-                                    <Icon name="open_in_new" size={11} /> Ver oferta
-                                  </a>
-                                )}
-                                <Link href={`/applications/${a.id}`} className="text-[11px] text-intel-700 hover:underline flex items-center gap-1">
-                                  <Icon name="description" size={11} /> Reporte
-                                </Link>
-                                {a.status === 'Interview' && (
-                                  <Link href={`/applications/${a.id}#prep`} className="text-[11px] text-naranja hover:underline flex items-center gap-1">
-                                    <Icon name="psychology" size={11} /> Playbook
-                                  </Link>
-                                )}
-                                <div className="ml-auto">
-                                  <RowMenu
-                                    currentStatus={a.status}
-                                    onChangeStatus={(s) => updateStatus(a.id, s)}
-                                    onCopyUrl={a.url ? () => navigator.clipboard.writeText(a.url!) : undefined}
-                                  />
+                            <div className="text-xs text-gris-500 mt-0.5">{p.title ?? '—'}</div>
+                          </td>
+                          <td className="px-3 py-4 text-gris-300">—</td>
+                          <td className="px-3 py-4">
+                            <span className="inline-block rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-semibold bg-[#F3F3F1] text-gris-500">
+                              Pendiente
+                            </span>
+                          </td>
+                          <td className="px-3 py-4 text-center text-gris-300">—</td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <div className="inline-flex gap-1.5">
+                              <button
+                                onClick={() => api.post('/api/pipeline/evaluate', { ids: [p.id] }).then(load)}
+                                className="px-3 py-1 text-[11px] font-medium rounded border border-[#EAEAEA] text-intel-700 hover:bg-[#E1F3FE] hover:border-[#E1F3FE] hover:text-[#1F6C9F] active:scale-[0.98] transition"
+                              >
+                                Evaluar
+                              </button>
+                              <button
+                                onClick={() => discardPending(p.id)}
+                                className="px-3 py-1 text-[11px] font-medium rounded border border-[#EAEAEA] text-gris-500 hover:bg-[#FDEBEC] hover:border-[#FDEBEC] hover:text-[#9F2F2D] active:scale-[0.98] transition"
+                              >
+                                Descartar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    const a = r.app!;
+                    const scoreNum = a.score ? Number(a.score) : null;
+                    const pill = STATUS_PILL[a.status];
+                    const expanded = expandedId === a.id;
+                    const tl = buildTimeline({ status: a.status, date: a.date, updatedAt: a.updatedAt, score: scoreNum });
+                    return (
+                      <Fragment key={`a-${a.id}`}>
+                        <tr className={`${!isLast || expanded ? 'border-b border-[#F3F3F1]' : ''} hover:bg-[#FBFBFA] transition-colors`}>
+                          <td className="px-6 py-4 text-gris-500 font-mono text-xs">{a.num}</td>
+                          <td className="px-3 py-4">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <Link href={`/applications/${a.id}`} className="font-medium text-intel-700 hover:underline">
+                                {a.company}
+                              </Link>
+                              {activeFollowUpIds.has(a.id) && (
+                                <span className="inline-block rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] font-semibold bg-[#FBF3DB] text-[#7a5d00]">
+                                  Follow-up
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gris-500 mt-0.5">{a.role}</div>
+                          </td>
+                          <td className="px-3 py-4">
+                            {scoreNum != null ? (
+                              <span className={`text-2xl font-bold tabular-nums tracking-[-0.02em] ${scoreColor(scoreNum)}`}>
+                                {scoreNum.toFixed(1)}
+                              </span>
+                            ) : (
+                              <span className="text-gris-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-4">
+                            <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-semibold ${pill.bg} ${pill.text}`}>
+                              {pill.label}
+                            </span>
+                          </td>
+                          <td className="px-3 py-4 text-center">
+                            {a.cvTailoredUrl ? (
+                              <a href={a.cvTailoredUrl} target="_blank" rel="noreferrer"
+                                 title={`Descargar Word · ${a.cvTailoredCoverage ?? '?'}% cobertura`}
+                                 className="inline-block px-2.5 py-1 rounded text-xs font-mono font-semibold bg-[#E1F3FE] text-[#1F6C9F] hover:bg-intel-700 hover:text-white transition">
+                                {a.cvTailoredCoverage}%
+                              </a>
+                            ) : a.status === 'Evaluated' ? (
+                              <Link href={`/applications/${a.id}#cv-tailored`}
+                                    className="inline-block px-2.5 py-1 rounded text-[10px] uppercase tracking-[0.1em] font-medium border border-dashed border-[#EAEAEA] text-gris-500 hover:border-intel-700 hover:text-intel-700 transition">
+                                Generar
+                              </Link>
+                            ) : (
+                              <span className="text-gris-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={() => setExpandedId(expanded ? null : a.id)}
+                              className="text-gris-500 hover:text-intel-700 transition w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-[#F5F5F7]"
+                              title={expanded ? 'Colapsar' : 'Ver más'}
+                            >
+                              <span className="text-base leading-none">{expanded ? '−' : '+'}</span>
+                            </button>
+                          </td>
+                        </tr>
+                        {expanded && (
+                          <tr className={`bg-[#FBFBFA] ${!isLast ? 'border-b border-[#F3F3F1]' : ''}`}>
+                            <td colSpan={6} className="px-6 py-6">
+                              <div className="grid md:grid-cols-2 gap-8">
+                                <div>
+                                  <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-3">
+                                    Línea de tiempo
+                                  </div>
+                                  <Timeline steps={tl.steps} summary={tl.summary} summaryTone={tl.tone} />
+                                </div>
+                                <div>
+                                  <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-3">
+                                    Notas de evaluación
+                                  </div>
+                                  <p className="text-sm text-intel-700 leading-relaxed">{a.notes ?? '—'}</p>
+                                  <div className="mt-4 flex flex-wrap gap-3 items-center">
+                                    {a.url && (
+                                      <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-intel-700 hover:underline">
+                                        Ver oferta ↗
+                                      </a>
+                                    )}
+                                    <Link href={`/applications/${a.id}`} className="text-xs text-intel-700 hover:underline">
+                                      Reporte completo →
+                                    </Link>
+                                    {a.status === 'Interview' && (
+                                      <Link href={`/applications/${a.id}#prep`} className="text-xs text-[#a85100] hover:underline">
+                                        Playbook →
+                                      </Link>
+                                    )}
+                                    <div className="ml-auto">
+                                      <RowMenu
+                                        currentStatus={a.status}
+                                        onChangeStatus={(s) => updateStatus(a.id, s)}
+                                        onCopyUrl={a.url ? () => navigator.clipboard.writeText(a.url!) : undefined}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function StatChip({ label, value, icon, accent, onClick, active }: { label: string; value: number; icon: string; accent: string; onClick?: () => void; active?: boolean }) {
-  const base = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-colors';
-  const tone = active ? 'bg-intel-700 text-white border-intel-700' : `bg-white border-gris-300 ${accent} hover:border-intel-700`;
-  return (
-    <button onClick={onClick} disabled={!onClick} className={`${base} ${tone} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}>
-      <Icon name={icon} size={13} />
-      <span className="font-bold">{value}</span>
-      <span className={active ? 'opacity-90' : 'opacity-70'}>{label}</span>
-    </button>
-  );
-}
-
-function EmptyState({ filter, topMatch }: { filter: QuickFilter; topMatch: AppRow | null }) {
-  if (filter === 'interview') {
-    return (
-      <div className="p-8 text-center">
-        <Icon name="mic" size={28} className="text-naranja mb-2" />
-        <p className="text-gris-500 text-sm">Cuando una entrevista esté confirmada, va a aparecer acá.</p>
-        {topMatch && (
-          <p className="mt-2 text-xs text-gris-500">
-            Top match disponible: <Link href={`/applications/${topMatch.id}`} className="text-intel-700 font-semibold hover:underline">{topMatch.company}</Link> ({topMatch.score}/5)
-          </p>
-        )}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
       </div>
-    );
-  }
-  if (filter === 'high') {
-    return <div className="p-8 text-center text-gris-500 text-sm">Sin apps con score ≥ 4.0 todavía.</div>;
-  }
-  if (filter === 'offer') {
-    return <div className="p-8 text-center text-gris-500 text-sm">Sin ofertas todavía. Sigue aplicando 💪</div>;
-  }
-  return (
-    <div className="p-8 text-center text-gris-500 text-sm">
-      <p>No hay ofertas en este filtro.</p>
-      {topMatch && (
-        <p className="mt-2 text-xs">
-          Tu top match es <Link href={`/applications/${topMatch.id}`} className="text-intel-700 font-semibold hover:underline">{topMatch.company}</Link> ({topMatch.score}/5).
-        </p>
-      )}
     </div>
   );
 }

@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
-import { Icon } from '@/components/Icon';
-import { Section } from '@/components/Section';
-import { StatusBadge, STATUS_LABEL_ES } from '@/components/StatusBadge';
 import { api } from '@/lib/api';
 import { APPLICATION_STATUSES, type ApplicationStatus } from '@career-ops/shared';
 
@@ -27,6 +23,30 @@ interface PrepData {
 
 interface CvTailoredData {
   cv: { id: string; contentMd: string; fileUrl: string | null; keywordCoverage: string | null; generatedAt: string } | null;
+}
+
+const STATUS_PILL: Record<ApplicationStatus, { bg: string; text: string; label: string }> = {
+  Evaluated: { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Pendiente' },
+  Applied:   { bg: 'bg-[#E1F3FE]', text: 'text-[#1F6C9F]', label: 'Aplicada' },
+  Responded: { bg: 'bg-[#FBF3DB]', text: 'text-[#7a5d00]', label: 'Contactada' },
+  Interview: { bg: 'bg-[#FDE9D7]', text: 'text-[#a85100]', label: 'Entrevista' },
+  Offer:     { bg: 'bg-[#EDF3EC]', text: 'text-[#346538]', label: 'Oferta' },
+  Rejected:  { bg: 'bg-[#FDEBEC]', text: 'text-[#9F2F2D]', label: 'Rechazada' },
+  Discarded: { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Descartada' },
+  SKIP:      { bg: 'bg-[#F3F3F1]', text: 'text-gris-500',  label: 'Skip' },
+};
+
+const STATUS_LABEL_ES: Record<ApplicationStatus, string> = {
+  Evaluated: 'Pendiente', Applied: 'Aplicada', Responded: 'Contactada',
+  Interview: 'Entrevista', Offer: 'Oferta', Rejected: 'Rechazada',
+  Discarded: 'Descartada', SKIP: 'Skip',
+};
+
+function scoreColor(score: number | null): string {
+  if (score == null) return 'text-gris-300';
+  if (score >= 4.0) return 'text-[#346538]';
+  if (score >= 3.0) return 'text-[#a85100]';
+  return 'text-[#9F2F2D]';
 }
 
 const STATUS_BEFORE_APPLIED: ApplicationStatus[] = ['Evaluated'];
@@ -55,26 +75,16 @@ export default function ApplicationDetail() {
 
   async function generatePrep() {
     setGeneratingPrep(true);
-    try {
-      await api.post(`/api/applications/${id}/prep`, {});
-      alert('Prep encolado. Recargá en ~1 minuto.');
-    } catch (e) {
-      alert(`No se pudo encolar: ${(e as Error).message}`);
-    } finally {
-      setGeneratingPrep(false);
-    }
+    try { await api.post(`/api/applications/${id}/prep`, {}); alert('Prep encolado. Recargá en ~1 min.'); }
+    catch (e) { alert(`No se pudo encolar: ${(e as Error).message}`); }
+    finally { setGeneratingPrep(false); }
   }
 
   async function generateTailoredCv() {
     setGeneratingCv(true);
-    try {
-      await api.post(`/api/applications/${id}/cv-tailored`, {});
-      alert('Generación de CV adaptado encolada. Recargá en ~1-2 minutos.');
-    } catch (e) {
-      alert(`No se pudo encolar: ${(e as Error).message}`);
-    } finally {
-      setGeneratingCv(false);
-    }
+    try { await api.post(`/api/applications/${id}/cv-tailored`, {}); alert('CV adaptado encolado. Recargá en ~1-2 min.'); }
+    catch (e) { alert(`No se pudo encolar: ${(e as Error).message}`); }
+    finally { setGeneratingCv(false); }
   }
 
   function downloadPrepMd() {
@@ -84,11 +94,8 @@ export default function ApplicationDetail() {
     const blob = new Blob([prep.contentMd], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.download = `playbook-${slug}-${a.date}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.href = url; link.download = `playbook-${slug}-${a.date}.md`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
 
@@ -98,199 +105,320 @@ export default function ApplicationDetail() {
   }
 
   async function reevaluate() {
-    if (!data?.application.url) {
-      alert('Esta aplicación no tiene URL guardada. Agregala al pipeline manualmente.');
-      return;
-    }
+    if (!data?.application.url) { alert('Esta aplicación no tiene URL guardada.'); return; }
     setReevaluating(true);
     try {
       const r = await api.post<{ item: { id: string } }>('/api/pipeline', {
-        url: data.application.url,
-        company: data.application.company,
-        title: data.application.role,
+        url: data.application.url, company: data.application.company, title: data.application.role,
       });
       const pipelineUrlId = r.item?.id;
-      if (!pipelineUrlId) {
-        alert('No se pudo agregar al pipeline (probablemente ya está procesada).');
-        return;
-      }
+      if (!pipelineUrlId) { alert('No se pudo agregar al pipeline.'); return; }
       await api.post('/api/pipeline/evaluate', { ids: [pipelineUrlId] });
-      alert('Re-evaluación encolada. Revisá en unos minutos.');
-    } finally {
-      setReevaluating(false);
-    }
+      alert('Re-evaluación encolada.');
+    } finally { setReevaluating(false); }
   }
 
-  if (!data) return <p className="text-gris-500">Cargando…</p>;
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12">
+        <p className="text-gris-500 text-center mt-12">Cargando…</p>
+      </div>
+    );
+  }
+
   const a = data.application;
+  const scoreNum = a.score ? Number(a.score) : null;
+  const pill = STATUS_PILL[a.status];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-intel-700 leading-tight">{a.company}</h1>
-          <p className="text-text-muted text-xs">{a.role}</p>
-          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
-            <span className="text-gris-500">#{a.num} · {a.date}</span>
-            <StatusBadge status={a.status} />
-            {a.score && <span className="font-semibold text-core-700">{a.score}/5</span>}
+    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
+      <div className="max-w-4xl mx-auto space-y-12">
+
+        {/* Breadcrumb back */}
+        <Link href="/preview" className="inline-block text-xs uppercase tracking-[0.15em] text-gris-500 hover:text-intel-700 transition">
+          ← Pipeline
+        </Link>
+
+        {/* Header editorial */}
+        <header className="space-y-4">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium font-mono">
+            Aplicación #{a.num} · {new Date(a.date).toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' })}
           </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5 lg:max-w-[60%] lg:justify-end">
-          {APPLICATION_STATUSES.map((s) => (
-            <Button
-              key={s}
-              variant={s === a.status ? 'primary' : 'ghost'}
-              onClick={() => updateStatus(s)}
-              className="text-xs"
-            >
-              {STATUS_LABEL_ES[s]}
-            </Button>
-          ))}
-        </div>
-      </div>
+          <h1 className="text-5xl md:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
+            {a.company}
+          </h1>
+          <p className="text-xl text-gris-500 leading-relaxed">{a.role}</p>
 
-      {a.notes && (
-        <Section id="notas" title="Notas" defaultOpen={true}>
-          <Card>
-            <p className="text-negro/90 leading-relaxed">{a.notes}</p>
-          </Card>
-        </Section>
-      )}
-
-      {(a.url || a.pdfUrl) && (
-        <Section id="fuente" title="Fuente y CV anterior" defaultOpen={false}>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <span className={`inline-block rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] font-semibold ${pill.bg} ${pill.text}`}>
+              {pill.label}
+            </span>
+            {scoreNum != null && (
+              <div className="flex items-baseline gap-2">
+                <span className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Score</span>
+                <span className={`text-3xl font-bold tabular-nums tracking-[-0.02em] ${scoreColor(scoreNum)}`}>
+                  {scoreNum.toFixed(1)}
+                </span>
+                <span className="text-sm text-gris-500">/ 5</span>
+              </div>
+            )}
             {a.url && (
-              <Card>
-                <div className="text-sm text-gris-500 mb-1">Fuente</div>
-                <a className="text-core-700 hover:underline break-all text-sm" href={a.url} target="_blank" rel="noreferrer">{a.url}</a>
-              </Card>
+              <a href={a.url} target="_blank" rel="noreferrer" className="ml-auto text-sm text-intel-700 hover:underline">
+                Ver oferta original ↗
+              </a>
+            )}
+          </div>
+        </header>
+
+        {/* Status changer */}
+        <section>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-3">
+            Cambiar estado
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {APPLICATION_STATUSES.map((s) => {
+              const isActive = s === a.status;
+              return (
+                <button
+                  key={s}
+                  onClick={() => updateStatus(s)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-intel-700 text-white border-intel-700'
+                      : 'border-[#EAEAEA] text-gris-500 hover:border-intel-700 hover:text-intel-700'
+                  }`}
+                >
+                  {STATUS_LABEL_ES[s]}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Notas */}
+        {a.notes && (
+          <section className="bg-white border border-[#EAEAEA] rounded-xl p-8">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-4">
+              Notas de evaluación
+            </div>
+            <p className="text-base text-intel-700 leading-relaxed">{a.notes}</p>
+          </section>
+        )}
+
+        {/* Fuente y CV anterior */}
+        {(a.url || a.pdfUrl) && (
+          <section className="grid md:grid-cols-2 gap-4">
+            {a.url && (
+              <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
+                  Fuente
+                </div>
+                <a href={a.url} target="_blank" rel="noreferrer" className="text-sm text-intel-700 hover:underline break-all font-mono">
+                  {a.url}
+                </a>
+              </div>
             )}
             {a.pdfUrl && (
-              <Card>
-                <div className="text-sm text-gris-500 mb-1">CV anterior (sin adaptar al JD)</div>
-                <a className="text-core-700 hover:underline" href={a.pdfUrl} target="_blank" rel="noreferrer">📄 Abrir PDF</a>
-              </Card>
-            )}
-          </div>
-        </Section>
-      )}
-
-      <Section id="report" title="Evaluación del rol" subtitle="Reporte detallado de match candidato ↔ JD generado por Gemini." defaultOpen={true}>
-        {data.report ? (
-          <Card>
-            <div className="prose-coreintel max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.report.contentMd}</ReactMarkdown>
-            </div>
-          </Card>
-        ) : (
-          <Card className="text-center py-8">
-            <p className="text-gris-500 mb-3">Esta aplicación no tiene un report detallado todavía.</p>
-            {a.url && (
-              <Button onClick={reevaluate} disabled={reevaluating}>
-                {reevaluating ? 'Encolando…' : '🔄 Re-evaluar con Gemini'}
-              </Button>
-            )}
-          </Card>
-        )}
-      </Section>
-
-      <Section id="cv-tailored" title="CV adaptado al JD" subtitle="Versión del CV reescrita con keywords del JD, bullets reordenados por relevancia y formato ATS-friendly. Descarga como .docx para editar antes de enviar.">
-        {tailoredCv ? (
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-gris-300/60">
-              <div className="text-sm">
-                <div className="text-gris-500 text-xs mb-1">
-                  Generado {new Date(tailoredCv.generatedAt).toLocaleString()}
+              <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
+                  CV anterior (sin adaptar)
                 </div>
-                {tailoredCv.keywordCoverage && (
-                  <div className="text-intel-700 font-semibold">
-                    Cobertura de keywords del JD: {tailoredCv.keywordCoverage}%
-                  </div>
-                )}
+                <a href={a.pdfUrl} target="_blank" rel="noreferrer" className="text-sm text-intel-700 hover:underline">
+                  Abrir PDF ↗
+                </a>
               </div>
-              <div className="flex gap-2">
-                {tailoredCv.fileUrl && (
-                  <a href={tailoredCv.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded border border-gris-300 hover:bg-intel-50">
-                    <Icon name="download" size={14} /> Descargar Word
-                  </a>
-                )}
-                {STATUS_BEFORE_APPLIED.includes(a.status) && a.url && (
-                  <Button variant="ghost" onClick={generateTailoredCv} disabled={generatingCv} className="text-sm">
-                    {generatingCv ? 'Encolando…' : 'Regenerar'}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="prose-coreintel max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{tailoredCv.contentMd}</ReactMarkdown>
-            </div>
-          </Card>
-        ) : STATUS_BEFORE_APPLIED.includes(a.status) ? (
-          <Card className="text-center py-8">
-            <p className="text-gris-500 mb-3">Generá una versión del CV adaptada a esta oferta antes de aplicar.</p>
-            {a.url ? (
-              <Button onClick={generateTailoredCv} disabled={generatingCv}>
-                {generatingCv ? 'Encolando…' : 'Generar CV adaptado'}
-              </Button>
-            ) : (
-              <p className="text-xs text-gris-500">Necesitás una URL de oferta para extraer el JD.</p>
             )}
-          </Card>
-        ) : (
-          <Card className="text-center py-6">
-            <p className="text-gris-500 text-sm">El CV adaptado se genera antes de aplicar (status Evaluated).</p>
-          </Card>
+          </section>
         )}
-      </Section>
 
-      <Section id="prep" title="Playbook operativo del rol" subtitle="Qué hace un profesional senior para ejecutar cada responsabilidad del JD." defaultOpen={true}>
-        {prep ? (
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div className="text-xs text-gris-500">
-                Generado {new Date(prep.generatedAt).toLocaleString()}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={downloadPrepMd} className="text-xs">
-                  Descargar .md
-                </Button>
-                {prep.fileUrl && (
-                  <a href={prep.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center text-xs px-3 py-1.5 rounded border border-gris-300 hover:bg-intel-50">
-                    Descargar Word
-                  </a>
-                )}
+        {/* Evaluación */}
+        <section>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-intel-700 tracking-[-0.02em] mb-2">
+              Evaluación del rol
+            </h2>
+            <p className="text-sm text-gris-500 leading-relaxed">
+              Reporte detallado de match candidato ↔ JD generado por Gemini.
+            </p>
+          </div>
+          {data.report ? (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 md:p-10">
+              <div className="prose-coreintel max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.report.contentMd}</ReactMarkdown>
               </div>
             </div>
-            <div className="prose-coreintel max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{prep.contentMd}</ReactMarkdown>
+          ) : (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+              <p className="text-gris-500 text-sm mb-4">Esta aplicación no tiene reporte detallado todavía.</p>
+              {a.url && (
+                <button
+                  onClick={reevaluate}
+                  disabled={reevaluating}
+                  className="px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+                >
+                  {reevaluating ? 'Encolando…' : 'Re-evaluar con Gemini'}
+                </button>
+              )}
             </div>
-            {a.url && (
-              <div className="mt-4 pt-4 border-t border-gris-300/60">
-                <Button variant="ghost" onClick={generatePrep} disabled={generatingPrep}>
-                  {generatingPrep ? 'Encolando…' : 'Regenerar playbook'}
-                </Button>
+          )}
+        </section>
+
+        {/* CV adaptado */}
+        <section id="cv-tailored">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-intel-700 tracking-[-0.02em] mb-2">
+              CV adaptado al JD
+            </h2>
+            <p className="text-sm text-gris-500 leading-relaxed max-w-2xl">
+              Versión del CV reescrita con keywords del JD, bullets reordenados por relevancia y formato ATS-friendly. Descargá como .docx para editar antes de enviar.
+            </p>
+          </div>
+
+          {tailoredCv ? (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-8 py-5 border-b border-[#F3F3F1]">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-1">
+                    Generado
+                  </div>
+                  <div className="text-xs text-gris-500 font-mono">
+                    {new Date(tailoredCv.generatedAt).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  {tailoredCv.keywordCoverage && (
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">
+                        Cobertura keywords JD
+                      </span>
+                      <span className="text-2xl font-bold text-intel-700 tabular-nums tracking-[-0.02em]">
+                        {tailoredCv.keywordCoverage}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {tailoredCv.fileUrl && (
+                    <a
+                      href={tailoredCv.fileUrl} target="_blank" rel="noreferrer"
+                      className="px-4 py-2 text-xs font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition"
+                    >
+                      Descargar Word
+                    </a>
+                  )}
+                  {STATUS_BEFORE_APPLIED.includes(a.status) && a.url && (
+                    <button
+                      onClick={generateTailoredCv}
+                      disabled={generatingCv}
+                      className="px-4 py-2 text-xs font-medium rounded-md border border-[#EAEAEA] text-intel-700 hover:bg-[#F5F5F7] active:scale-[0.98] transition"
+                    >
+                      {generatingCv ? 'Encolando…' : 'Regenerar'}
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-          </Card>
-        ) : a.status === 'Interview' || a.status === 'Responded' ? (
-          <Card className="text-center py-8">
-            <p className="text-gris-500 mb-3">Generá el playbook operativo a partir del JD.</p>
-            {a.url ? (
-              <Button onClick={generatePrep} disabled={generatingPrep}>
-                {generatingPrep ? 'Encolando…' : 'Generar playbook'}
-              </Button>
-            ) : (
-              <p className="text-xs text-gris-500">Necesitás una URL de oferta para extraer el JD.</p>
-            )}
-          </Card>
-        ) : (
-          <Card className="text-center py-6">
-            <p className="text-gris-500 text-sm">Disponible una vez confirmada la entrevista (status Interview o Responded).</p>
-          </Card>
-        )}
-      </Section>
+              <div className="p-8 md:p-10">
+                <div className="prose-coreintel max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{tailoredCv.contentMd}</ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          ) : STATUS_BEFORE_APPLIED.includes(a.status) ? (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+              <p className="text-gris-500 text-sm mb-4">Generá una versión del CV adaptada a esta oferta antes de aplicar.</p>
+              {a.url ? (
+                <button
+                  onClick={generateTailoredCv}
+                  disabled={generatingCv}
+                  className="px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+                >
+                  {generatingCv ? 'Encolando…' : 'Generar CV adaptado'}
+                </button>
+              ) : (
+                <p className="text-xs text-gris-500">Necesitás una URL de oferta para extraer el JD.</p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 text-center">
+              <p className="text-gris-500 text-sm">El CV adaptado se genera antes de aplicar (status Pendiente).</p>
+            </div>
+          )}
+        </section>
+
+        {/* Playbook */}
+        <section id="prep">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-intel-700 tracking-[-0.02em] mb-2">
+              Playbook operativo
+            </h2>
+            <p className="text-sm text-gris-500 leading-relaxed max-w-2xl">
+              Qué hace un profesional senior para ejecutar cada responsabilidad del JD.
+            </p>
+          </div>
+
+          {prep ? (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-8 py-5 border-b border-[#F3F3F1]">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-1">
+                    Generado
+                  </div>
+                  <div className="text-xs text-gris-500 font-mono">
+                    {new Date(prep.generatedAt).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {prep.fileUrl && (
+                    <a
+                      href={prep.fileUrl} target="_blank" rel="noreferrer"
+                      className="px-4 py-2 text-xs font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition"
+                    >
+                      Descargar Word
+                    </a>
+                  )}
+                  <button
+                    onClick={downloadPrepMd}
+                    className="px-4 py-2 text-xs font-medium rounded-md border border-[#EAEAEA] text-intel-700 hover:bg-[#F5F5F7] active:scale-[0.98] transition"
+                  >
+                    Descargar .md
+                  </button>
+                  {a.url && (
+                    <button
+                      onClick={generatePrep}
+                      disabled={generatingPrep}
+                      className="px-4 py-2 text-xs font-medium rounded-md border border-[#EAEAEA] text-gris-500 hover:bg-[#F5F5F7] hover:text-intel-700 active:scale-[0.98] transition"
+                    >
+                      {generatingPrep ? 'Encolando…' : 'Regenerar'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="p-8 md:p-10">
+                <div className="prose-coreintel max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{prep.contentMd}</ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          ) : a.status === 'Interview' || a.status === 'Responded' ? (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+              <p className="text-gris-500 text-sm mb-4">Generá el playbook operativo a partir del JD.</p>
+              {a.url ? (
+                <button
+                  onClick={generatePrep}
+                  disabled={generatingPrep}
+                  className="px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+                >
+                  {generatingPrep ? 'Encolando…' : 'Generar playbook'}
+                </button>
+              ) : (
+                <p className="text-xs text-gris-500">Necesitás una URL de oferta para extraer el JD.</p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 text-center">
+              <p className="text-gris-500 text-sm">Disponible una vez confirmada la entrevista (Contactada / Entrevista).</p>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -31,6 +31,16 @@
 html, body { color: var(--color-text); background: var(--color-bg); }
 body { font-feature-settings: "ss01" on, "cv01" on; }
 
+/* Editorial preset typography (preset 2 from coreintel-brand skill).
+   Overrides Montserrat with the system SF stack for an ultra-clean
+   "Apple-like" look. Apply to the outermost div of preview pages. */
+.editorial-font,
+.editorial-font * {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-feature-settings: "ss01" on, "cv01" on, "ss03" on;
+}
+
 a { color: var(--color-primary-hover); }
 a:hover { text-decoration: underline; }
 

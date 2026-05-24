@@ -35,6 +35,10 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'member']);
 
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'suspended']);
 
+export const adminActionEnum = pgEnum('admin_action', [
+  'invite', 'approve', 'suspend', 'reactivate', 'role_change',
+]);
+
 // ── Tables ───────────────────────────────────────────────────────────
 
 export const profiles = pgTable('profiles', {
@@ -208,4 +212,18 @@ export const evaluationRuns = pgTable('evaluation_runs', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   userIdx: index('eval_runs_user_idx').on(t.userId, t.createdAt),
+}));
+
+export const adminAuditLog = pgTable('admin_audit_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorId: uuid('actor_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
+  actorEmail: text('actor_email').notNull(),
+  action: adminActionEnum('action').notNull(),
+  targetUserId: uuid('target_user_id').references(() => authUsers.id, { onDelete: 'set null' }),
+  targetEmail: text('target_email'),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  createdAtIdx: index('admin_audit_log_created_at_idx').on(t.createdAt),
+  actorIdx: index('admin_audit_log_actor_idx').on(t.actorId),
 }));

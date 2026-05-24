@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { db, profiles } from '@career-ops/db';
+import { db, profiles, adminAuditLog } from '@career-ops/db';
 import { desc, eq } from 'drizzle-orm';
 import { auth, requireAdmin, type AuthCtx } from '../lib/auth.js';
 
@@ -15,6 +15,25 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+type AdminAction = 'invite' | 'approve' | 'suspend' | 'reactivate' | 'role_change';
+
+async function logAction(input: {
+  actor: AuthCtx;
+  action: AdminAction;
+  targetUserId: string | null;
+  targetEmail: string | null;
+  metadata?: Record<string, unknown>;
+}) {
+  await db.insert(adminAuditLog).values({
+    actorId: input.actor.userId,
+    actorEmail: input.actor.email,
+    action: input.action,
+    targetUserId: input.targetUserId,
+    targetEmail: input.targetEmail,
+    metadata: input.metadata ?? {},
+  });
+}
 
 const InviteSchema = z.object({
   email: z.string().email(),
@@ -47,6 +66,7 @@ adminRoute.get('/users', async (c) => {
 adminRoute.post('/users/invite', zValidator('json', InviteSchema), async (c) => {
   const { email, role } = c.req.valid('json');
   const origin = c.req.header('origin') ?? process.env.WEB_URL ?? 'http://localhost:3000';
+  const me = c.get('auth');
 
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${origin}/auth/callback`,
@@ -55,11 +75,17 @@ adminRoute.post('/users/invite', zValidator('json', InviteSchema), async (c) => 
     throw new HTTPException(400, { message: error?.message ?? 'invite failed' });
   }
 
-  // The handle_new_user trigger creates the profile row as pending/member.
-  // If the admin asked for a different role, update it now.
   if (role !== 'member') {
     await db.update(profiles).set({ role }).where(eq(profiles.userId, data.user.id));
   }
+
+  await logAction({
+    actor: me,
+    action: 'invite',
+    targetUserId: data.user.id,
+    targetEmail: data.user.email ?? email,
+    metadata: { role },
+  });
 
   return c.json({ userId: data.user.id, email: data.user.email });
 });
@@ -69,7 +95,6 @@ adminRoute.patch('/users/:userId', zValidator('json', PatchSchema), async (c) =>
   const patch = c.req.valid('json');
   const me = c.get('auth');
 
-  // Guard: admins cannot demote or suspend themselves (avoid lockout).
   if (userId === me.userId) {
     if (patch.role && patch.role !== 'admin') {
       throw new HTTPException(400, { message: 'cannot remove your own admin role' });
@@ -78,6 +103,14 @@ adminRoute.patch('/users/:userId', zValidator('json', PatchSchema), async (c) =>
       throw new HTTPException(400, { message: 'cannot change your own active status' });
     }
   }
+
+  // Fetch existing row to determine which audit action(s) to record.
+  const [existing] = await db.select({
+    email: profiles.email,
+    role: profiles.role,
+    status: profiles.status,
+  }).from(profiles).where(eq(profiles.userId, userId)).limit(1);
+  if (!existing) throw new HTTPException(404, { message: 'user not found' });
 
   const [row] = await db.update(profiles)
     .set({ ...patch, updatedAt: new Date() })
@@ -88,7 +121,47 @@ adminRoute.patch('/users/:userId', zValidator('json', PatchSchema), async (c) =>
       role: profiles.role,
       status: profiles.status,
     });
-  if (!row) throw new HTTPException(404, { message: 'user not found' });
+
+  if (patch.status && patch.status !== existing.status) {
+    let action: AdminAction;
+    if (patch.status === 'suspended') action = 'suspend';
+    else if (patch.status === 'active' && existing.status === 'suspended') action = 'reactivate';
+    else if (patch.status === 'active' && existing.status === 'pending') action = 'approve';
+    else action = 'approve';
+
+    await logAction({
+      actor: me,
+      action,
+      targetUserId: userId,
+      targetEmail: existing.email,
+      metadata: { from_status: existing.status, to_status: patch.status },
+    });
+  }
+
+  if (patch.role && patch.role !== existing.role) {
+    await logAction({
+      actor: me,
+      action: 'role_change',
+      targetUserId: userId,
+      targetEmail: existing.email,
+      metadata: { from_role: existing.role, to_role: patch.role },
+    });
+  }
 
   return c.json({ user: row });
+});
+
+adminRoute.get('/audit-log', async (c) => {
+  const limit = Math.min(Number(c.req.query('limit') ?? 50), 200);
+  const rows = await db.select({
+    id: adminAuditLog.id,
+    actorId: adminAuditLog.actorId,
+    actorEmail: adminAuditLog.actorEmail,
+    action: adminAuditLog.action,
+    targetUserId: adminAuditLog.targetUserId,
+    targetEmail: adminAuditLog.targetEmail,
+    metadata: adminAuditLog.metadata,
+    createdAt: adminAuditLog.createdAt,
+  }).from(adminAuditLog).orderBy(desc(adminAuditLog.createdAt)).limit(limit);
+  return c.json({ entries: rows });
 });

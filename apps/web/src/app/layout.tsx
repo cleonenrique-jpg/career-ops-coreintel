@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Header } from '@/components/Header';
+import { BrandBar } from '@/components/BrandBar';
 import { serverSupabase } from '@/lib/supabase-server';
 import './globals.css';
 
@@ -39,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="font-sans bg-[var(--color-bg-subtle)] min-h-screen">
+        <BrandBar />
         <Header email={user?.email ?? null} role={role} />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
       </body>
