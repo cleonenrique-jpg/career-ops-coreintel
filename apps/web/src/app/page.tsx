@@ -176,17 +176,17 @@ export default function PipelineHome() {
   ];
 
   return (
-    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
-      <div className="max-w-6xl mx-auto space-y-12">
+    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-4 py-10 md:px-12 md:py-16">
+      <div className="max-w-6xl mx-auto space-y-10 md:space-y-12">
 
         <header className="space-y-3">
           <div className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
             Coreintel · Career Ops
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
             Pipeline
           </h1>
-          <p className="text-base text-gris-500 max-w-xl leading-relaxed">
+          <p className="text-sm md:text-base text-gris-500 max-w-xl leading-relaxed">
             Ofertas evaluadas, aplicaciones en curso y follow-ups pendientes.
           </p>
         </header>
@@ -259,9 +259,9 @@ export default function PipelineHome() {
               Agregar oferta
             </h2>
           </div>
-          <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex-1 min-w-[280px]">
+          <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-6">
+            <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-3">
+              <div className="flex-1 w-full">
                 <label className="block text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
                   URL de oferta
                 </label>
@@ -270,52 +270,56 @@ export default function PipelineHome() {
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') addUrl(); }}
-                  placeholder="LinkedIn / Computrabajo / PROCOMER / Talent.com / CINDE…"
+                  placeholder="LinkedIn / Computrabajo / PROCOMER / Talent.com…"
                   className="w-full border-0 border-b border-[#EAEAEA] bg-transparent px-0 py-2 text-base text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 transition-colors"
                 />
               </div>
-              <button
-                onClick={addUrl}
-                disabled={!newUrl.trim() || adding}
-                className="px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
-              >
-                {adding ? 'Encolando…' : 'Agregar'}
-              </button>
-              <button
-                onClick={runScan}
-                className="px-5 py-2 text-sm font-medium rounded-md border border-[#EAEAEA] text-intel-700 hover:bg-[#F5F5F7] active:scale-[0.98] transition"
-              >
-                Scan ahora
-              </button>
+              <div className="flex gap-2 w-full md:w-auto">
+                <button
+                  onClick={addUrl}
+                  disabled={!newUrl.trim() || adding}
+                  className="flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+                >
+                  {adding ? 'Encolando…' : 'Agregar'}
+                </button>
+                <button
+                  onClick={runScan}
+                  className="flex-1 md:flex-none px-5 py-2 text-sm font-medium rounded-md border border-[#EAEAEA] text-intel-700 hover:bg-[#F5F5F7] active:scale-[0.98] transition"
+                >
+                  Scan ahora
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Filters + Search */}
-        <section className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setFilter('all')}
-            className={`text-xs px-3 py-1.5 rounded-full border transition ${
-              filter === 'all' ? 'bg-intel-700 text-white border-intel-700' : 'border-[#EAEAEA] text-gris-500 hover:border-intel-700 hover:text-intel-700'
-            }`}
-          >
-            Todas
-          </button>
-          <button
-            onClick={() => setFilter(filter === 'high' ? 'all' : 'high')}
-            className={`text-xs px-3 py-1.5 rounded-full border transition ${
-              filter === 'high' ? 'bg-[#346538] text-white border-[#346538]' : 'border-[#EAEAEA] text-gris-500 hover:border-[#346538] hover:text-[#346538]'
-            }`}
-          >
-            Score ≥ 4.0
-          </button>
-          <div className="ml-auto">
+        <section className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                filter === 'all' ? 'bg-intel-700 text-white border-intel-700' : 'border-[#EAEAEA] text-gris-500 hover:border-intel-700 hover:text-intel-700'
+              }`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setFilter(filter === 'high' ? 'all' : 'high')}
+              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                filter === 'high' ? 'bg-[#346538] text-white border-[#346538]' : 'border-[#EAEAEA] text-gris-500 hover:border-[#346538] hover:text-[#346538]'
+              }`}
+            >
+              Score ≥ 4.0
+            </button>
+          </div>
+          <div className="md:ml-auto w-full md:w-auto">
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar empresa, rol, notas…"
-              className="border border-[#EAEAEA] rounded-md bg-white px-3 py-1.5 text-xs text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 w-[240px] transition-colors"
+              className="w-full md:w-[240px] border border-[#EAEAEA] rounded-md bg-white px-3 py-1.5 text-xs text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 transition-colors"
             />
           </div>
         </section>
@@ -334,7 +338,9 @@ export default function PipelineHome() {
             ) : filtered.length === 0 ? (
               <div className="px-6 py-16 text-center text-gris-500 text-sm">Sin resultados para este filtro.</div>
             ) : (
-              <table className="w-full text-sm">
+              <>
+              {/* Desktop table */}
+              <table className="hidden md:table w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#EAEAEA]">
                     <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium w-12">#</th>
@@ -495,6 +501,145 @@ export default function PipelineHome() {
                   })}
                 </tbody>
               </table>
+
+              {/* Mobile card list */}
+              <ul className="md:hidden divide-y divide-[#F3F3F1]">
+                {filtered.map((r) => {
+                  if (r.kind === 'pending') {
+                    const p = r.pipeline!;
+                    return (
+                      <li key={`mp-${p.id}`} className="p-4 space-y-3">
+                        <div>
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="font-medium text-intel-700 text-base">{p.company ?? '—'}</span>
+                            <span className="text-[10px] uppercase tracking-[0.1em] text-gris-500 font-semibold">{p.source ?? 'manual'}</span>
+                          </div>
+                          <div className="text-xs text-gris-500 mt-0.5">{p.title ?? '—'}</div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="inline-block rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-semibold bg-[#F3F3F1] text-gris-500">
+                            Pendiente
+                          </span>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => api.post('/api/pipeline/evaluate', { ids: [p.id] }).then(load)}
+                              className="px-3 py-1.5 text-[11px] font-medium rounded border border-[#EAEAEA] text-intel-700 active:scale-[0.98] transition"
+                            >
+                              Evaluar
+                            </button>
+                            <button
+                              onClick={() => discardPending(p.id)}
+                              className="px-3 py-1.5 text-[11px] font-medium rounded border border-[#EAEAEA] text-gris-500 active:scale-[0.98] transition"
+                            >
+                              Descartar
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
+                  const a = r.app!;
+                  const scoreNum = a.score ? Number(a.score) : null;
+                  const pill = STATUS_PILL[a.status];
+                  const expanded = expandedId === a.id;
+                  const tl = buildTimeline({ status: a.status, date: a.date, updatedAt: a.updatedAt, score: scoreNum });
+                  return (
+                    <li key={`ma-${a.id}`} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <Link href={`/applications/${a.id}`} className="font-medium text-intel-700 hover:underline text-base">
+                              {a.company}
+                            </Link>
+                            {activeFollowUpIds.has(a.id) && (
+                              <span className="inline-block rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] font-semibold bg-[#FBF3DB] text-[#7a5d00]">
+                                Follow-up
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gris-500 mt-0.5">{a.role}</div>
+                          <div className="text-[10px] uppercase tracking-[0.12em] text-gris-300 font-mono mt-1">
+                            #{a.num} · {new Date(a.date).toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setExpandedId(expanded ? null : a.id)}
+                          className="text-gris-500 transition w-8 h-8 rounded-full inline-flex items-center justify-center bg-[#F5F5F7] shrink-0"
+                          title={expanded ? 'Colapsar' : 'Ver más'}
+                        >
+                          <span className="text-lg leading-none">{expanded ? '−' : '+'}</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          {scoreNum != null && (
+                            <span className={`text-2xl font-bold tabular-nums tracking-[-0.02em] ${scoreColor(scoreNum)}`}>
+                              {scoreNum.toFixed(1)}
+                            </span>
+                          )}
+                          <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-semibold ${pill.bg} ${pill.text}`}>
+                            {pill.label}
+                          </span>
+                        </div>
+                        {a.cvTailoredUrl ? (
+                          <a href={a.cvTailoredUrl} target="_blank" rel="noreferrer"
+                             className="inline-block px-2.5 py-1 rounded text-xs font-mono font-semibold bg-[#E1F3FE] text-[#1F6C9F]">
+                            CV {a.cvTailoredCoverage}%
+                          </a>
+                        ) : a.status === 'Evaluated' ? (
+                          <Link href={`/applications/${a.id}#cv-tailored`}
+                                className="inline-block px-2.5 py-1 rounded text-[10px] uppercase tracking-[0.1em] font-medium border border-dashed border-[#EAEAEA] text-gris-500">
+                            Generar CV
+                          </Link>
+                        ) : null}
+                      </div>
+
+                      {expanded && (
+                        <div className="pt-3 mt-3 border-t border-[#F3F3F1] space-y-4">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
+                              Línea de tiempo
+                            </div>
+                            <Timeline steps={tl.steps} summary={tl.summary} summaryTone={tl.tone} />
+                          </div>
+                          {a.notes && (
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
+                                Notas
+                              </div>
+                              <p className="text-sm text-intel-700 leading-relaxed">{a.notes}</p>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-3 items-center">
+                            {a.url && (
+                              <a href={a.url} target="_blank" rel="noreferrer" className="text-xs text-intel-700 hover:underline">
+                                Ver oferta ↗
+                              </a>
+                            )}
+                            <Link href={`/applications/${a.id}`} className="text-xs text-intel-700 hover:underline">
+                              Reporte completo →
+                            </Link>
+                            {a.status === 'Interview' && (
+                              <Link href={`/applications/${a.id}#prep`} className="text-xs text-[#a85100] hover:underline">
+                                Playbook →
+                              </Link>
+                            )}
+                            <div className="ml-auto">
+                              <RowMenu
+                                currentStatus={a.status}
+                                onChangeStatus={(s) => updateStatus(a.id, s)}
+                                onCopyUrl={a.url ? () => navigator.clipboard.writeText(a.url!) : undefined}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              </>
             )}
           </div>
         </section>

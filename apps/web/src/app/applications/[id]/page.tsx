@@ -131,8 +131,8 @@ export default function ApplicationDetail() {
   const pill = STATUS_PILL[a.status];
 
   return (
-    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
-      <div className="max-w-4xl mx-auto space-y-12">
+    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-4 py-10 md:px-12 md:py-16">
+      <div className="max-w-4xl mx-auto space-y-10 md:space-y-12">
 
         {/* Breadcrumb back */}
         <Link href="/preview" className="inline-block text-xs uppercase tracking-[0.15em] text-gris-500 hover:text-intel-700 transition">
@@ -144,10 +144,10 @@ export default function ApplicationDetail() {
           <div className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium font-mono">
             Aplicación #{a.num} · {new Date(a.date).toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' })}
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05] break-words">
             {a.company}
           </h1>
-          <p className="text-xl text-gris-500 leading-relaxed">{a.role}</p>
+          <p className="text-base md:text-xl text-gris-500 leading-relaxed">{a.role}</p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <span className={`inline-block rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.1em] font-semibold ${pill.bg} ${pill.text}`}>
@@ -197,7 +197,7 @@ export default function ApplicationDetail() {
 
         {/* Notas */}
         {a.notes && (
-          <section className="bg-white border border-[#EAEAEA] rounded-xl p-8">
+          <section className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8">
             <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-4">
               Notas de evaluación
             </div>
@@ -209,7 +209,7 @@ export default function ApplicationDetail() {
         {(a.url || a.pdfUrl) && (
           <section className="grid md:grid-cols-2 gap-4">
             {a.url && (
-              <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
+              <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-6">
                 <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
                   Fuente
                 </div>
@@ -219,7 +219,7 @@ export default function ApplicationDetail() {
               </div>
             )}
             {a.pdfUrl && (
-              <div className="bg-white border border-[#EAEAEA] rounded-xl p-6">
+              <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-6">
                 <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
                   CV anterior (sin adaptar)
                 </div>
@@ -248,7 +248,7 @@ export default function ApplicationDetail() {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 md:p-10 text-center">
               <p className="text-gris-500 text-sm mb-4">Esta aplicación no tiene reporte detallado todavía.</p>
               {a.url && (
                 <button
@@ -276,7 +276,7 @@ export default function ApplicationDetail() {
 
           {tailoredCv ? (
             <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-8 py-5 border-b border-[#F3F3F1]">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-8 md:py-5 border-b border-[#F3F3F1]">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-1">
                     Generado
@@ -295,7 +295,7 @@ export default function ApplicationDetail() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap w-full md:w-auto">
                   {tailoredCv.fileUrl && (
                     <a
                       href={tailoredCv.fileUrl} target="_blank" rel="noreferrer"
@@ -315,14 +315,14 @@ export default function ApplicationDetail() {
                   )}
                 </div>
               </div>
-              <div className="p-8 md:p-10">
+              <div className="p-5 md:p-8 lg:p-10">
                 <div className="prose-coreintel max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{tailoredCv.contentMd}</ReactMarkdown>
                 </div>
               </div>
             </div>
           ) : STATUS_BEFORE_APPLIED.includes(a.status) ? (
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 md:p-10 text-center">
               <p className="text-gris-500 text-sm mb-4">Generá una versión del CV adaptada a esta oferta antes de aplicar.</p>
               {a.url ? (
                 <button
@@ -337,7 +337,7 @@ export default function ApplicationDetail() {
               )}
             </div>
           ) : (
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 text-center">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8 text-center">
               <p className="text-gris-500 text-sm">El CV adaptado se genera antes de aplicar (status Pendiente).</p>
             </div>
           )}
@@ -356,7 +356,7 @@ export default function ApplicationDetail() {
 
           {prep ? (
             <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 px-8 py-5 border-b border-[#F3F3F1]">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-8 md:py-5 border-b border-[#F3F3F1]">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-1">
                     Generado
@@ -365,7 +365,7 @@ export default function ApplicationDetail() {
                     {new Date(prep.generatedAt).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap w-full md:w-auto">
                   {prep.fileUrl && (
                     <a
                       href={prep.fileUrl} target="_blank" rel="noreferrer"
@@ -391,14 +391,14 @@ export default function ApplicationDetail() {
                   )}
                 </div>
               </div>
-              <div className="p-8 md:p-10">
+              <div className="p-5 md:p-8 lg:p-10">
                 <div className="prose-coreintel max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{prep.contentMd}</ReactMarkdown>
                 </div>
               </div>
             </div>
           ) : a.status === 'Interview' || a.status === 'Responded' ? (
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-10 text-center">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-6 md:p-10 text-center">
               <p className="text-gris-500 text-sm mb-4">Generá el playbook operativo a partir del JD.</p>
               {a.url ? (
                 <button
@@ -413,7 +413,7 @@ export default function ApplicationDetail() {
               )}
             </div>
           ) : (
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 text-center">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8 text-center">
               <p className="text-gris-500 text-sm">Disponible una vez confirmada la entrevista (Contactada / Entrevista).</p>
             </div>
           )}
