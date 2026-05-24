@@ -1,5 +1,5 @@
-// Tiny client to hit the API service. Uses Supabase Auth JWT when available;
-// otherwise relies on the single-tenant DEFAULT_USER_ID fallback on the API side.
+// Tiny client to hit the API service. Sends the Supabase Auth session JWT
+// as a Bearer token; requests without a session will get 401 from the API.
 
 import { createBrowserClient } from '@supabase/ssr';
 
