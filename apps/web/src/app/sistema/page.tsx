@@ -66,23 +66,23 @@ function SistemaContent() {
   }, {});
 
   return (
-    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
-      <div className="max-w-6xl mx-auto space-y-16">
+    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-4 py-10 md:px-12 md:py-16">
+      <div className="max-w-6xl mx-auto space-y-10 md:space-y-16">
 
         <header className="space-y-3">
           <div className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
             Coreintel · Career Ops
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-intel-700 tracking-[-0.02em] leading-[1.05]">
             Sistema
           </h1>
-          <p className="text-base text-gris-500 max-w-xl leading-relaxed">
+          <p className="text-sm md:text-base text-gris-500 max-w-xl leading-relaxed">
             Fuentes de scan, ejecuciones recientes, costos LLM y storage.
           </p>
         </header>
 
         {/* Tabs editorial */}
-        <nav className="flex gap-8 border-b border-[#EAEAEA]">
+        <nav className="flex gap-5 md:gap-8 border-b border-[#EAEAEA] overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -102,7 +102,7 @@ function SistemaContent() {
         </nav>
 
         {loading && (
-          <div className="bg-white border border-[#EAEAEA] rounded-xl p-12 text-center text-gris-500 text-sm">
+          <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 md:p-12 text-center text-gris-500 text-sm">
             Cargando…
           </div>
         )}
@@ -110,13 +110,13 @@ function SistemaContent() {
         {!loading && active === 'fuentes' && (
           <div className="space-y-8">
             <section className="grid grid-cols-2 md:grid-cols-3 gap-px bg-[#EAEAEA] border border-[#EAEAEA] rounded-xl overflow-hidden">
-              <div className="bg-white px-6 py-5 col-span-2 md:col-span-1">
+              <div className="bg-white px-5 py-4 md:px-6 md:py-5 col-span-2 md:col-span-1">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-1">
                   Total portales
                 </div>
                 <div className="text-3xl font-bold text-intel-700 tabular-nums">{portals.length}</div>
               </div>
-              <div className="bg-white px-6 py-5 col-span-2">
+              <div className="bg-white px-5 py-4 md:px-6 md:py-5 col-span-2">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-2">
                   Breakdown por fuente
                 </div>
@@ -131,21 +131,22 @@ function SistemaContent() {
             </section>
 
             <section>
-              <div className="flex items-baseline justify-between mb-4">
+              <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-3 mb-4">
                 <h2 className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
                   Portales configurados <span className="text-gris-300">·</span> {portals.length}
                 </h2>
                 <button
                   onClick={runScan}
                   disabled={running}
-                  className="px-4 py-2 text-xs font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
+                  className="w-full md:w-auto px-4 py-2 text-xs font-semibold rounded-md bg-intel-700 text-white hover:bg-intel-700/90 active:scale-[0.98] transition disabled:bg-gris-300"
                 >
                   {running ? 'Disparando…' : 'Ejecutar scan ahora'}
                 </button>
               </div>
 
               <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
+                {/* Desktop table */}
+                <table className="hidden md:table w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#EAEAEA]">
                       <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Fuente</th>
@@ -180,18 +181,51 @@ function SistemaContent() {
                         </td>
                       </tr>
                     ))}
-                    {portals.length === 0 && (
-                      <tr><td colSpan={5} className="px-6 py-12 text-center text-gris-500 text-sm">Sin portales.</td></tr>
-                    )}
                   </tbody>
                 </table>
+
+                {/* Mobile card list */}
+                <ul className="md:hidden divide-y divide-[#F3F3F1]">
+                  {portals.map((p) => (
+                    <li key={`m-${p.id}`} className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-intel-700 font-medium text-base">{p.companyName ?? '—'}</span>
+                            <span className="text-[10px] uppercase tracking-[0.1em] font-semibold text-gris-500">{p.source}</span>
+                          </div>
+                          <div className="text-xs text-gris-500 font-mono break-all mt-1">
+                            {p.careersUrl ?? p.apiUrl ?? '—'}
+                          </div>
+                        </div>
+                        <span className={`shrink-0 inline-block rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.1em] font-semibold ${
+                          p.enabled ? 'bg-[#EDF3EC] text-[#346538]' : 'bg-[#F3F3F1] text-gris-500'
+                        }`}>
+                          {p.enabled ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={() => removePortal(p.id)}
+                          className="px-3 py-1.5 text-[11px] font-medium rounded border border-[#EAEAEA] text-gris-500 active:scale-[0.98] transition"
+                        >
+                          Quitar portal
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                {portals.length === 0 && (
+                  <div className="px-6 py-12 text-center text-gris-500 text-sm">Sin portales.</div>
+                )}
               </div>
             </section>
           </div>
         )}
 
         {!loading && active === 'scans' && (
-          <section className="bg-white border border-[#EAEAEA] rounded-xl p-8 space-y-4">
+          <section className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8 space-y-4">
             <h2 className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
               Scans automáticos
             </h2>
@@ -215,7 +249,7 @@ function SistemaContent() {
 
         {!loading && active === 'costos' && (
           <section className="space-y-6">
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8">
               <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium mb-2">
                 Costo LLM acumulado
               </div>
@@ -229,7 +263,7 @@ function SistemaContent() {
               <p className="text-xs text-gris-500 mt-2">Suma de todas las evaluaciones</p>
             </div>
 
-            <div className="bg-white border border-[#EAEAEA] rounded-xl p-8 space-y-3">
+            <div className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8 space-y-3">
               <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium">
                 Modelo activo
               </div>
@@ -245,7 +279,7 @@ function SistemaContent() {
         )}
 
         {!loading && active === 'storage' && (
-          <section className="bg-white border border-[#EAEAEA] rounded-xl p-8 space-y-4">
+          <section className="bg-white border border-[#EAEAEA] rounded-xl p-5 md:p-8 space-y-4">
             <div className="text-[10px] uppercase tracking-[0.18em] text-gris-500 font-medium">
               Supabase Storage
             </div>
