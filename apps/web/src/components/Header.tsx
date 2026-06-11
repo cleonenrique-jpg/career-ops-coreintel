@@ -29,12 +29,12 @@ export function Header({ email = null, role = null }: Props) {
   return (
     <header className="border-b border-[var(--color-border)] bg-white sticky top-0 z-30">
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-3 flex items-center gap-3 md:gap-4">
-        {/* Hamburguesa — solo móvil, a la izquierda */}
+        {/* Hamburguesa — siempre visible, a la izquierda */}
         <button
           aria-label="Menu"
           aria-expanded={open}
           onClick={() => setOpen(!open)}
-          className="md:hidden -ml-1 p-2 rounded text-intel-700 hover:bg-intel-50 shrink-0"
+          className="-ml-1 p-2 rounded text-intel-700 hover:bg-intel-50 shrink-0"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             {open
@@ -43,32 +43,15 @@ export function Header({ email = null, role = null }: Props) {
           </svg>
         </button>
 
-        {/* Logo — centrado en móvil, a la izquierda en desktop */}
+        {/* Logo — centrado */}
         <Link
           href="/"
           onClick={() => setOpen(false)}
-          className="flex items-center gap-3 shrink-0 flex-1 justify-center md:flex-none md:justify-start"
+          className="flex items-center gap-3 shrink-0 flex-1 justify-center"
         >
           <Image src="/brand/logo-principal.png" alt="Coreintelhub" width={120} height={28} priority />
           <span className="hidden lg:inline-block text-intel-700 font-semibold text-sm">/ career-ops</span>
         </Link>
-
-        {/* Nav desktop */}
-        <nav className="hidden md:flex gap-1 ml-auto">
-          {navItems.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={`px-3 py-1.5 rounded text-sm transition ${
-                isActive(it.href)
-                  ? 'bg-intel text-white font-semibold'
-                  : 'text-intel-700 hover:bg-intel-50'
-              }`}
-            >
-              {it.label}
-            </Link>
-          ))}
-        </nav>
 
         {/* Avatar / cuenta — siempre visible, a la derecha */}
         <div className="shrink-0">
@@ -77,7 +60,7 @@ export function Header({ email = null, role = null }: Props) {
       </div>
 
       {open && (
-        <nav className="md:hidden border-t border-[var(--color-border)] bg-white">
+        <nav className="border-t border-[var(--color-border)] bg-white">
           {navItems.map((it) => (
             <Link
               key={it.href}
