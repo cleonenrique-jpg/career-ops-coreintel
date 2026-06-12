@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { Tabs } from '@/components/Tabs';
+import { AdminFeedback } from '@/components/admin/AdminFeedback';
+import { AdminMetrics } from '@/components/admin/AdminMetrics';
 
 type UserRole = 'admin' | 'member';
 type UserStatus = 'pending' | 'active' | 'suspended';
@@ -140,6 +143,20 @@ export default function AdminPage() {
             Invita usuarios, gestiona roles y revisa el historial de acciones del sistema.
           </p>
         </header>
+
+        <Tabs
+          tabs={[
+            { key: 'usuarios', label: 'Usuarios', icon: 'group' },
+            { key: 'feedback', label: 'Feedback', icon: 'rate_review' },
+            { key: 'metricas', label: 'Métricas', icon: 'analytics' },
+            { key: 'auditoria', label: 'Auditoría', icon: 'history' },
+          ]}
+          defaultTab="usuarios"
+        >
+          {(active) => (
+            <div className="space-y-12">
+              {active === 'usuarios' && (
+                <>
 
         {/* Stat strip */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#EAEAEA] border border-[#EAEAEA] rounded-xl overflow-hidden">
@@ -298,7 +315,13 @@ export default function AdminPage() {
           </div>
         </section>
 
-        {/* Audit log */}
+                </>
+              )}
+
+              {active === 'feedback' && <AdminFeedback />}
+              {active === 'metricas' && <AdminMetrics />}
+
+              {active === 'auditoria' && (
         <section>
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-[11px] uppercase tracking-[0.18em] text-gris-500 font-medium">
@@ -344,6 +367,10 @@ export default function AdminPage() {
             </table>
           </div>
         </section>
+              )}
+            </div>
+          )}
+        </Tabs>
 
       </div>
     </div>

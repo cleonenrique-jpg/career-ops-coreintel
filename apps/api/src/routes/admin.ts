@@ -3,8 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { db, profiles, adminAuditLog } from '@career-ops/db';
-import { desc, eq } from 'drizzle-orm';
+import { db, profiles, adminAuditLog, feedback, cvs, usageEvents } from '@career-ops/db';
+import { desc, eq, and, gte, count, countDistinct, sql } from 'drizzle-orm';
 import { auth, requireAdmin, type AuthCtx } from '../lib/auth.js';
 
 type Env = { Variables: { auth: AuthCtx } };
@@ -46,6 +46,13 @@ const PatchSchema = z.object({
 }).refine((d) => d.status !== undefined || d.role !== undefined, {
   message: 'must provide at least one of status or role',
 });
+
+const FeedbackPatchSchema = z.object({
+  category: z.enum(['bug', 'ux', 'nueva_funcionalidad', 'rendimiento', 'contenido', 'monetizacion']).nullable().optional(),
+  priority: z.enum(['baja', 'media', 'alta', 'critica']).nullable().optional(),
+  status: z.enum(['nuevo', 'en_revision', 'planificado', 'en_progreso', 'resuelto', 'descartado']).optional(),
+  adminNotes: z.string().max(5000).nullable().optional(),
+}).refine((d) => Object.keys(d).length > 0, { message: 'sin cambios' });
 
 export const adminRoute = new Hono<Env>();
 adminRoute.use('*', auth, requireAdmin);
@@ -164,4 +171,89 @@ adminRoute.get('/audit-log', async (c) => {
     createdAt: adminAuditLog.createdAt,
   }).from(adminAuditLog).orderBy(desc(adminAuditLog.createdAt)).limit(limit);
   return c.json({ entries: rows });
+});
+
+// ── Feedback: gestión y clasificación ────────────────────────────────
+
+adminRoute.get('/feedback', async (c) => {
+  const status = c.req.query('status');
+  const category = c.req.query('category');
+  const conds = [];
+  if (status) conds.push(eq(feedback.status, status as never));
+  if (category) conds.push(eq(feedback.category, category as never));
+  const rows = await db.select().from(feedback)
+    .where(conds.length ? and(...conds) : undefined)
+    .orderBy(desc(feedback.createdAt))
+    .limit(500);
+  return c.json({ feedback: rows });
+});
+
+adminRoute.patch('/feedback/:id', zValidator('json', FeedbackPatchSchema), async (c) => {
+  const id = c.req.param('id');
+  const patch = c.req.valid('json');
+  const [row] = await db.update(feedback)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(feedback.id, id))
+    .returning();
+  if (!row) throw new HTTPException(404, { message: 'feedback not found' });
+  return c.json({ feedback: row });
+});
+
+// Firma temporal de la captura (bucket privado) para que el admin pueda verla.
+adminRoute.get('/feedback/:id/screenshot', async (c) => {
+  const id = c.req.param('id');
+  const [row] = await db.select({ path: feedback.screenshotPath })
+    .from(feedback).where(eq(feedback.id, id)).limit(1);
+  if (!row?.path) throw new HTTPException(404, { message: 'sin captura' });
+  const bucket = process.env.STORAGE_BUCKET ?? 'career-ops';
+  const { data, error } = await supabaseAdmin.storage.from(bucket).createSignedUrl(row.path, 300);
+  if (error || !data) throw new HTTPException(500, { message: error?.message ?? 'no se pudo firmar la URL' });
+  return c.json({ url: data.signedUrl });
+});
+
+// ── Métricas KPI de adopción / retención / uso (solo clientes: role=member) ──
+
+adminRoute.get('/metrics', async (c) => {
+  const member = eq(profiles.role, 'member');
+
+  const [tot] = await db.select({ n: count() }).from(profiles).where(member);
+  const total = Number(tot?.n ?? 0);
+
+  const [act] = await db.select({ n: count() }).from(profiles)
+    .where(and(member, eq(profiles.status, 'active')));
+
+  const [cvU] = await db.select({ n: countDistinct(cvs.userId) }).from(cvs)
+    .innerJoin(profiles, eq(profiles.userId, cvs.userId)).where(member);
+
+  const [fbU] = await db.select({ n: countDistinct(feedback.userId) }).from(feedback)
+    .innerJoin(profiles, eq(profiles.userId, feedback.userId)).where(member);
+
+  const [rec] = await db.select({
+    responders: sql<number>`count(*) filter (where ${feedback.wouldRecommend} is not null)`,
+    promoters: sql<number>`count(*) filter (where ${feedback.wouldRecommend} = true)`,
+  }).from(feedback).innerJoin(profiles, eq(profiles.userId, feedback.userId)).where(member);
+
+  const [weekly] = await db.select({ n: countDistinct(usageEvents.userId) }).from(usageEvents)
+    .innerJoin(profiles, eq(profiles.userId, usageEvents.userId))
+    .where(and(member, gte(usageEvents.createdAt, sql`now() - interval '7 days'`)));
+
+  const [ret] = await db.select({ n: countDistinct(usageEvents.userId) }).from(usageEvents)
+    .innerJoin(profiles, eq(profiles.userId, usageEvents.userId))
+    .where(and(member, sql`${usageEvents.createdAt} >= ${profiles.createdAt} + interval '3 days'`));
+
+  const pct = (x: number) => (total > 0 ? Math.round((x / total) * 100) : 0);
+  const responders = Number(rec?.responders ?? 0);
+  const promoters = Number(rec?.promoters ?? 0);
+  const recPct = responders > 0 ? Math.round((promoters / responders) * 100) : 0;
+
+  const kpis = [
+    { key: 'registro_completado', label: 'Registro completado', value: pct(Number(act?.n ?? 0)), target: 80, detail: `${Number(act?.n ?? 0)}/${total} activos` },
+    { key: 'cv_subido',           label: 'CV subido',           value: pct(Number(cvU?.n ?? 0)), target: 70, detail: `${Number(cvU?.n ?? 0)}/${total}` },
+    { key: 'retencion_3d',        label: 'Retención 3 días',    value: pct(Number(ret?.n ?? 0)), target: 50, detail: `${Number(ret?.n ?? 0)}/${total}` },
+    { key: 'feedback_enviado',    label: 'Feedback enviado',    value: pct(Number(fbU?.n ?? 0)), target: 60, detail: `${Number(fbU?.n ?? 0)}/${total}` },
+    { key: 'recomendacion',       label: 'Recomendación a otros', value: recPct,                 target: 70, detail: `${promoters}/${responders} respuestas` },
+    { key: 'uso_semanal',         label: 'Uso semanal',         value: pct(Number(weekly?.n ?? 0)), target: 60, detail: `${Number(weekly?.n ?? 0)}/${total}` },
+  ].map((k) => ({ ...k, ok: k.value >= k.target }));
+
+  return c.json({ totalMembers: total, kpis });
 });

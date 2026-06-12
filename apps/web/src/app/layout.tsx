@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import { Header } from '@/components/Header';
 import { BrandBar } from '@/components/BrandBar';
+import { FeedbackLauncher } from '@/components/FeedbackLauncher';
+import { UsageTracker } from '@/components/UsageTracker';
 import { serverSupabase } from '@/lib/supabase-server';
 import './globals.css';
 
@@ -43,6 +45,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <BrandBar />
         <Header email={user?.email ?? null} role={role} />
         <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        {user && <FeedbackLauncher />}
+        {user && <UsageTracker />}
       </body>
     </html>
   );

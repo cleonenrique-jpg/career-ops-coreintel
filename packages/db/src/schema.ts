@@ -39,6 +39,22 @@ export const adminActionEnum = pgEnum('admin_action', [
   'invite', 'approve', 'suspend', 'reactivate', 'role_change',
 ]);
 
+export const feedbackTypeEnum = pgEnum('feedback_type', [
+  'error', 'sugerencia', 'funcion_faltante', 'comentario_general',
+]);
+
+export const feedbackCategoryEnum = pgEnum('feedback_category', [
+  'bug', 'ux', 'nueva_funcionalidad', 'rendimiento', 'contenido', 'monetizacion',
+]);
+
+export const feedbackPriorityEnum = pgEnum('feedback_priority', [
+  'baja', 'media', 'alta', 'critica',
+]);
+
+export const feedbackStatusEnum = pgEnum('feedback_status', [
+  'nuevo', 'en_revision', 'planificado', 'en_progreso', 'resuelto', 'descartado',
+]);
+
 // ── Tables ───────────────────────────────────────────────────────────
 
 export const profiles = pgTable('profiles', {
@@ -226,4 +242,38 @@ export const adminAuditLog = pgTable('admin_audit_log', {
 }, (t) => ({
   createdAtIdx: index('admin_audit_log_created_at_idx').on(t.createdAt),
   actorIdx: index('admin_audit_log_actor_idx').on(t.actorId),
+}));
+
+// Feedback de clientes (botón "Enviar sugerencia") + clasificación por el admin.
+export const feedback = pgTable('feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
+  userEmail: text('user_email').notNull(),
+  rating: integer('rating').notNull(),
+  type: feedbackTypeEnum('type').notNull(),
+  description: text('description').notNull(),
+  screenshotPath: text('screenshot_path'),
+  wouldRecommend: boolean('would_recommend'),
+  category: feedbackCategoryEnum('category'),
+  priority: feedbackPriorityEnum('priority'),
+  status: feedbackStatusEnum('status').notNull().default('nuevo'),
+  adminNotes: text('admin_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  createdAtIdx: index('feedback_created_at_idx').on(t.createdAt),
+  statusIdx: index('feedback_status_idx').on(t.status),
+  userIdx: index('feedback_user_idx').on(t.userId),
+}));
+
+// Eventos de uso para métricas de adopción / retención / uso semanal.
+export const usageEvents = pgTable('usage_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => authUsers.id, { onDelete: 'cascade' }),
+  event: text('event').notNull(),
+  path: text('path'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userCreatedIdx: index('usage_events_user_created_idx').on(t.userId, t.createdAt),
+  eventCreatedIdx: index('usage_events_event_created_idx').on(t.event, t.createdAt),
 }));
