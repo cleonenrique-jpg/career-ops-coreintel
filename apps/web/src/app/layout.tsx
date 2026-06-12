@@ -1,18 +1,10 @@
 import type { Metadata } from 'next';
-import { Montserrat } from 'next/font/google';
 import { Header } from '@/components/Header';
 import { BrandBar } from '@/components/BrandBar';
 import { FeedbackLauncher } from '@/components/FeedbackLauncher';
 import { UsageTracker } from '@/components/UsageTracker';
 import { serverSupabase } from '@/lib/supabase-server';
 import './globals.css';
-
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  weight: ['300', '400', '600', '700'],
-  variable: '--font-montserrat',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'career-ops — Coreintelhub',
@@ -34,17 +26,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="es" className={montserrat.variable}>
+    <html lang="es">
       <head>
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,-50..200"
         />
       </head>
-      <body className="font-sans bg-[var(--color-bg-subtle)] min-h-screen">
+      <body className="font-sans bg-white min-h-screen">
         <BrandBar />
         <Header email={user?.email ?? null} role={role} />
-        <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
         {user && <FeedbackLauncher />}
         {user && <UsageTracker />}
       </body>

@@ -13,19 +13,22 @@
   --color-negro:   #1d1e1c;
   --color-gris-900:#1f2937;
   --color-gris-700:#374151;
-  --color-gris-500:#6b7280;
+  --color-gris-500:#6e6e73;
   --color-gris-300:#d1d5db;
   --color-gris-100:#f3f4f6;
   --color-gris-50: #f8fafc;
   --color-blanco:  #ffffff;
+  /* Preset 2 · Editorial Clean (tipo Apple) — neutros canónicos */
+  --color-tile:    #f5f5f7;
+  --color-hairline: rgba(0,0,0,0.08);
   --color-primary: var(--color-core);
   --color-primary-hover: #2d8fd9;
   --color-secondary: var(--color-intel);
   --color-text: var(--color-negro);
   --color-text-muted: var(--color-gris-500);
   --color-bg: var(--color-blanco);
-  --color-bg-subtle: var(--color-gris-50);
-  --color-border: var(--color-gris-300);
+  --color-bg-subtle: var(--color-blanco);
+  --color-border: var(--color-hairline);
 }
 
 html, body { color: var(--color-text); background: var(--color-bg); }

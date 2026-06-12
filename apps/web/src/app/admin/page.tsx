@@ -128,7 +128,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="editorial-font min-h-screen bg-[#FBFBFA] -mx-6 -my-8 px-6 py-12 md:px-12 md:py-16">
+    <div className="editorial-font min-h-screen bg-white -mx-6 -my-10 px-6 py-12 md:px-12 md:py-16">
       <div className="max-w-6xl mx-auto space-y-16">
 
         {/* Header — editorial */}
@@ -159,7 +159,7 @@ export default function AdminPage() {
                 <>
 
         {/* Stat strip */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#EAEAEA] border border-[#EAEAEA] rounded-xl overflow-hidden">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-hairline border border-hairline rounded-3xl overflow-hidden">
           {[
             { label: 'Total', value: counts.total },
             { label: 'Activos', value: counts.active },
@@ -185,7 +185,7 @@ export default function AdminPage() {
             </h2>
             <span className="text-xs text-gris-500">Magic link vía Resend</span>
           </div>
-          <div className="bg-white border border-[#EAEAEA] rounded-xl p-8">
+          <div className="bg-white border border-hairline rounded-3xl p-8">
             <form onSubmit={invite} className="flex flex-wrap items-end gap-4">
               <div className="flex-1 min-w-[260px]">
                 <label className="block text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium mb-2">
@@ -196,7 +196,7 @@ export default function AdminPage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="nombre@empresa.com"
-                  className="w-full border-0 border-b border-[#EAEAEA] bg-transparent px-0 py-2 text-base text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 transition-colors"
+                  className="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 text-base text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-intel-700 transition-colors"
                   required
                 />
               </div>
@@ -207,7 +207,7 @@ export default function AdminPage() {
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                  className="border border-[#EAEAEA] rounded-md bg-white px-3 py-2 text-sm text-intel-700 focus:outline-none focus:border-intel-700"
+                  className="border border-hairline rounded-md bg-white px-3 py-2 text-sm text-intel-700 focus:outline-none focus:border-intel-700"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -245,10 +245,10 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
+          <div className="bg-white border border-hairline rounded-3xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#EAEAEA]">
+                <tr className="border-b border-hairline">
                   <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Email</th>
                   <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Rol</th>
                   <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Estado</th>
@@ -261,7 +261,7 @@ export default function AdminPage() {
                   const isSelf = u.userId === me;
                   const pill = STATUS_PILL[u.status];
                   return (
-                    <tr key={u.userId} className={`${idx !== users.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-[#FBFBFA] transition-colors`}>
+                    <tr key={u.userId} className={`${idx !== users.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-tile transition-colors`}>
                       <td className="px-6 py-5 text-intel-700 font-medium">
                         <div className="flex items-center gap-2">
                           {u.email}
@@ -287,18 +287,18 @@ export default function AdminPage() {
                           <div className="inline-flex gap-1.5">
                             {u.status !== 'active' && (
                               <button onClick={() => patchUser(u.userId, { status: 'active' })}
-                                className="px-3 py-1.5 text-xs font-medium rounded border border-[#EAEAEA] text-intel-700 hover:bg-[#EDF3EC] hover:border-[#EDF3EC] hover:text-[#346538] active:scale-[0.98] transition">
+                                className="px-3 py-1.5 text-xs font-medium rounded border border-hairline text-intel-700 hover:bg-[#EDF3EC] hover:border-[#EDF3EC] hover:text-[#346538] active:scale-[0.98] transition">
                                 Aprobar
                               </button>
                             )}
                             {u.status !== 'suspended' && (
                               <button onClick={() => patchUser(u.userId, { status: 'suspended' })}
-                                className="px-3 py-1.5 text-xs font-medium rounded border border-[#EAEAEA] text-intel-700 hover:bg-[#FDEBEC] hover:border-[#FDEBEC] hover:text-[#9F2F2D] active:scale-[0.98] transition">
+                                className="px-3 py-1.5 text-xs font-medium rounded border border-hairline text-intel-700 hover:bg-[#FDEBEC] hover:border-[#FDEBEC] hover:text-[#9F2F2D] active:scale-[0.98] transition">
                                 Suspender
                               </button>
                             )}
                             <button onClick={() => patchUser(u.userId, { role: u.role === 'member' ? 'admin' : 'member' })}
-                              className="px-3 py-1.5 text-xs font-medium rounded border border-[#EAEAEA] text-gris-500 hover:bg-white hover:text-intel-700 active:scale-[0.98] transition">
+                              className="px-3 py-1.5 text-xs font-medium rounded border border-hairline text-gris-500 hover:bg-tile hover:text-intel-700 active:scale-[0.98] transition">
                               {u.role === 'member' ? 'Hacer admin' : 'Quitar admin'}
                             </button>
                           </div>
@@ -330,10 +330,10 @@ export default function AdminPage() {
             <span className="text-xs text-gris-500">Últimas 50 acciones</span>
           </div>
 
-          <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-hidden">
+          <div className="bg-white border border-hairline rounded-3xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#EAEAEA]">
+                <tr className="border-b border-hairline">
                   <th className="text-left px-6 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Cuándo</th>
                   <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Acción</th>
                   <th className="text-left px-3 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">Admin</th>
@@ -345,7 +345,7 @@ export default function AdminPage() {
                 {audit.map((e, idx) => {
                   const pill = ACTION_PILL[e.action];
                   return (
-                    <tr key={e.id} className={`${idx !== audit.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-[#FBFBFA] transition-colors`}>
+                    <tr key={e.id} className={`${idx !== audit.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-tile transition-colors`}>
                       <td className="px-6 py-4 text-xs text-gris-500 whitespace-nowrap font-mono">
                         {new Date(e.createdAt).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </td>

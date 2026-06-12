@@ -32,17 +32,28 @@ const config: Config = {
         amarillo: '#ffc00d',
         oliva:    '#9e9554',
         negro:    '#1d1e1c',
+        // Preset 2 · Editorial Clean — neutros canónicos (la guaca / real-estate)
+        tile:     '#f5f5f7',
+        hairline: 'rgba(0,0,0,0.08)',
+        // Estados-texto accesibles (acentos de marca oscurecidos para WCAG)
+        estado: {
+          ok:    '#3a7d00',
+          warn:  '#9a6a00',
+          error: '#c0392b',
+          info:  '#0a8a96',
+        },
         gris: {
           50:  '#f8fafc',
           100: '#f3f4f6',
           300: '#d1d5db',
-          500: '#6b7280',
+          500: '#6e6e73',
           700: '#374151',
           900: '#1f2937',
         },
       },
       fontFamily: {
-        sans: ['var(--font-montserrat)', 'system-ui', '-apple-system', 'sans-serif'],
+        // Preset 2 · Editorial Clean: stack de sistema (SF), excepción consciente a Montserrat.
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       // Dashboard-style compact sizes. Old marketing-page sizes (h1=2.5rem, h2=2rem,

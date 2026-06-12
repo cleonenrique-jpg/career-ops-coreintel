@@ -36,7 +36,7 @@ export function Tabs({ tabs, defaultTab, children }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 border-b border-gris-300">
+      <div className="flex flex-wrap gap-1 border-b border-hairline">
         {tabs.map((t) => (
           <button
             key={t.key}

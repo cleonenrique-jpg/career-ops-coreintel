@@ -25,7 +25,7 @@ const dotStyles: Record<StepState, string> = {
 
 const labelStyles: Record<StepState, string> = {
   done:     'text-[#5b6c00] font-medium',
-  active:   'text-naranja font-semibold',
+  active:   'text-estado-warn font-semibold',
   pending:  'text-gris-500',
   rejected: 'text-red-600',
   skipped:  'text-gris-500 italic',
@@ -41,7 +41,7 @@ const connectorStyles: Record<StepState, string> = {
 
 const summaryTone: Record<NonNullable<Props['summaryTone']>, string> = {
   neutral: 'text-gris-500',
-  warn:    'text-naranja',
+  warn:    'text-estado-warn',
   danger:  'text-red-600',
 };
 
@@ -77,7 +77,7 @@ export function Timeline({ steps, summary, summaryTone: tone = 'neutral' }: Prop
         );
       })}
       {summary && (
-        <div className={`text-[10px] pt-1.5 mt-1 border-t border-dashed border-gris-300 ${summaryTone[tone]}`}>
+        <div className={`text-[10px] pt-1.5 mt-1 border-t border-dashed border-hairline ${summaryTone[tone]}`}>
           {summary}
         </div>
       )}

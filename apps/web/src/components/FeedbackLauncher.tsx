@@ -116,7 +116,7 @@ export function FeedbackLauncher() {
 
           {/* panel */}
           <div className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gris-300 px-5 py-3.5 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-hairline px-5 py-3.5 flex items-center justify-between">
               <h2 className="text-base font-semibold text-intel-700">Enviar sugerencia</h2>
               <button onClick={close} className="p-1 rounded text-gris-500 hover:bg-gris-100" aria-label="Cerrar">
                 <Icon name="close" size={22} />
@@ -168,7 +168,7 @@ export function FeedbackLauncher() {
                         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition ${
                           type === t.value
                             ? 'border-core bg-core/10 text-intel-700 font-semibold'
-                            : 'border-gris-300 text-gris-700 hover:bg-gris-50'
+                            : 'border-hairline text-gris-700 hover:bg-gris-50'
                         }`}
                       >
                         <Icon name={t.icon} size={18} />
@@ -186,7 +186,7 @@ export function FeedbackLauncher() {
                     onChange={(e) => setDescription(e.target.value)}
                     rows={4}
                     placeholder="Contanos qué pasó o qué mejorarías…"
-                    className="w-full rounded-lg border border-gris-300 bg-white px-3 py-2 text-sm text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-core resize-none"
+                    className="w-full rounded-[14px] border border-hairline bg-white px-3 py-2 text-sm text-intel-700 placeholder:text-gris-300 focus:outline-none focus:border-core resize-none"
                   />
                 </div>
 
@@ -202,7 +202,7 @@ export function FeedbackLauncher() {
                       </button>
                     </div>
                   ) : (
-                    <label className={`inline-flex items-center gap-2 rounded-lg border border-dashed border-gris-300 px-3 py-2 text-sm text-gris-500 cursor-pointer hover:border-core hover:text-intel-700 ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <label className={`inline-flex items-center gap-2 rounded-lg border border-dashed border-hairline px-3 py-2 text-sm text-gris-500 cursor-pointer hover:border-core hover:text-intel-700 ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
                       <Icon name="photo_camera" size={18} />
                       {uploading ? 'Subiendo…' : 'Adjuntar imagen'}
                       <input type="file" accept="image/*" onChange={onFile} className="hidden" />
@@ -216,12 +216,12 @@ export function FeedbackLauncher() {
                   <div className="flex gap-2">
                     <button type="button" onClick={() => setRecommend(true)}
                       className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm transition ${
-                        recommend === true ? 'border-core bg-core/10 text-intel-700 font-semibold' : 'border-gris-300 text-gris-700 hover:bg-gris-50'}`}>
+                        recommend === true ? 'border-core bg-core/10 text-intel-700 font-semibold' : 'border-hairline text-gris-700 hover:bg-gris-50'}`}>
                       <Icon name="thumb_up" size={18} /> Sí
                     </button>
                     <button type="button" onClick={() => setRecommend(false)}
                       className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm transition ${
-                        recommend === false ? 'border-[#9F2F2D] bg-[#FDEBEC] text-[#9F2F2D] font-semibold' : 'border-gris-300 text-gris-700 hover:bg-gris-50'}`}>
+                        recommend === false ? 'border-[#9F2F2D] bg-[#FDEBEC] text-[#9F2F2D] font-semibold' : 'border-hairline text-gris-700 hover:bg-gris-50'}`}>
                       <Icon name="thumb_down" size={18} /> No
                     </button>
                   </div>
@@ -234,7 +234,7 @@ export function FeedbackLauncher() {
                 <button
                   onClick={submit}
                   disabled={submitting}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-core px-4 py-2.5 text-sm font-semibold text-white hover:bg-core-500 active:scale-[0.99] transition disabled:bg-gris-300"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-core px-4 py-2.5 text-sm font-semibold text-white hover:bg-core-500 active:scale-[0.99] transition disabled:bg-gris-300"
                 >
                   <Icon name="send" size={18} />
                   {submitting ? 'Enviando…' : 'Enviar'}

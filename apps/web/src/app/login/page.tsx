@@ -72,7 +72,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
-              className="flex-1 rounded border border-gris-300 px-3 py-1.5 text-sm"
+              className="flex-1 rounded-[14px] border border-hairline px-3 py-2 text-sm"
             />
             <Button onClick={sendMagicLink} disabled={!email}>Enviar</Button>
           </div>

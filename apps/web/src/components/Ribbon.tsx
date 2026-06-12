@@ -43,7 +43,7 @@ export function Ribbon() {
   if (!d) return null;
 
   return (
-    <div className="bg-white border border-gris-300 rounded-lg px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+    <div className="bg-tile rounded-2xl px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
       <span className="text-gris-500">
         <span className="font-bold text-core-700 text-base">{d.pending}</span> pendientes
       </span>
@@ -53,7 +53,7 @@ export function Ribbon() {
       </span>
       <span className="text-gris-300">·</span>
       <span className="text-gris-500">
-        <span className="font-bold text-naranja">{d.interview}</span> entrev
+        <span className="font-bold text-estado-warn">{d.interview}</span> entrev
       </span>
       <span className="text-gris-300">·</span>
       <span className="text-gris-500">

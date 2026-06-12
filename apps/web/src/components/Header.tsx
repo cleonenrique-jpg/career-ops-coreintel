@@ -50,7 +50,10 @@ export function Header({ email = null, role = null }: Props) {
           className="flex items-center gap-3 shrink-0 flex-1 justify-center"
         >
           <Image src="/brand/logo-principal.png" alt="Coreintelhub" width={120} height={28} priority />
-          <span className="hidden lg:inline-block text-intel-700 font-semibold text-sm">/ career-ops</span>
+          <span className="hidden lg:flex flex-col leading-tight">
+            <span className="text-negro font-semibold text-sm tracking-[-0.02em]">career-ops</span>
+            <span className="text-[11px] text-gris-500">por Coreintelhub</span>
+          </span>
         </Link>
 
         {/* Avatar / cuenta — siempre visible, a la derecha */}

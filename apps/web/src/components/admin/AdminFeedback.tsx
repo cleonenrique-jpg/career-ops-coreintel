@@ -102,12 +102,12 @@ export function AdminFeedback() {
         </h2>
         <div className="flex items-center gap-2">
           <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
-            className="border border-[#EAEAEA] rounded-md bg-white px-2.5 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
+            className="border border-hairline rounded-md bg-white px-2.5 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
             <option value="">Todos los estados</option>
             {STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select value={fCategory} onChange={(e) => setFCategory(e.target.value)}
-            className="border border-[#EAEAEA] rounded-md bg-white px-2.5 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
+            className="border border-hairline rounded-md bg-white px-2.5 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
             <option value="">Todas las categorías</option>
             {CATEGORY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -119,10 +119,10 @@ export function AdminFeedback() {
 
       {error && <div className="px-4 py-3 bg-[#FDEBEC] rounded-lg text-sm text-[#9F2F2D]">{error}</div>}
 
-      <div className="bg-white border border-[#EAEAEA] rounded-xl overflow-x-auto">
+      <div className="bg-white border border-hairline rounded-3xl overflow-x-auto">
         <table className="w-full text-sm min-w-[920px]">
           <thead>
-            <tr className="border-b border-[#EAEAEA]">
+            <tr className="border-b border-hairline">
               {['ID', 'Usuario', 'Comentario', 'Categoría', 'Prioridad', 'Estado'].map((h) => (
                 <th key={h} className="text-left px-4 py-4 text-[10px] uppercase tracking-[0.15em] text-gris-500 font-medium">{h}</th>
               ))}
@@ -130,7 +130,7 @@ export function AdminFeedback() {
           </thead>
           <tbody>
             {items.map((f, idx) => (
-              <tr key={f.id} className={`${idx !== items.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-[#FBFBFA] transition-colors align-top`}>
+              <tr key={f.id} className={`${idx !== items.length - 1 ? 'border-b border-[#F3F3F1]' : ''} hover:bg-tile transition-colors align-top`}>
                 <td className="px-4 py-4 text-[11px] text-gris-500 font-mono whitespace-nowrap">
                   {f.id.slice(0, 8)}
                   <div className="text-gris-300 mt-1">{new Date(f.createdAt).toLocaleDateString('es', { day: '2-digit', month: 'short' })}</div>
@@ -161,21 +161,21 @@ export function AdminFeedback() {
                 </td>
                 <td className="px-4 py-4">
                   <select value={f.category ?? ''} onChange={(e) => patch(f.id, { category: (e.target.value || null) as Category | null })}
-                    className="border border-[#EAEAEA] rounded-md bg-white px-2 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
+                    className="border border-hairline rounded-md bg-white px-2 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
                     <option value="">— sin clasificar</option>
                     {CATEGORY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </td>
                 <td className="px-4 py-4">
                   <select value={f.priority ?? ''} onChange={(e) => patch(f.id, { priority: (e.target.value || null) as Priority | null })}
-                    className={`border border-[#EAEAEA] rounded-md bg-white px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-intel-700 ${f.priority ? PRIORITY_PILL[f.priority] : 'text-gris-500'}`}>
+                    className={`border border-hairline rounded-md bg-white px-2 py-1.5 text-xs font-medium focus:outline-none focus:border-intel-700 ${f.priority ? PRIORITY_PILL[f.priority] : 'text-gris-500'}`}>
                     <option value="">—</option>
                     {PRIORITY_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </td>
                 <td className="px-4 py-4">
                   <select value={f.status} onChange={(e) => patch(f.id, { status: e.target.value as Status })}
-                    className="border border-[#EAEAEA] rounded-md bg-white px-2 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
+                    className="border border-hairline rounded-md bg-white px-2 py-1.5 text-xs text-intel-700 focus:outline-none focus:border-intel-700">
                     {STATUS_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </td>

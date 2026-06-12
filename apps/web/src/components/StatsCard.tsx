@@ -10,20 +10,22 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
   onClick?: () => void;
 }
 
+// Stat tile editorial (preset 2): fondo tile plano, número grande en negro de
+// marca y dot de categoría — el acento va como dato, no como borde/texto.
 export function StatsCard({ label, value, icon, accent, active, onClick, className = '', ...rest }: Props) {
   return (
     <div
       onClick={onClick}
       role={onClick ? 'button' : undefined}
-      className={`bg-white rounded-lg px-4 py-3 border-l-4 shadow-sm transition ${
-        onClick ? 'cursor-pointer hover:shadow-md' : ''
-      } ${active ? 'ring-2 ring-core/30' : ''} ${className}`}
-      style={{ borderLeftColor: accent }}
+      className={`bg-tile rounded-3xl px-5 py-4 transition ${
+        onClick ? 'cursor-pointer hover:bg-gris-100' : ''
+      } ${active ? 'ring-2 ring-core/40' : ''} ${className}`}
       {...rest}
     >
-      <div className="text-h3 font-bold text-intel-700">{value}</div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-gris-500 mt-0.5 flex items-center gap-1">
-        <Icon name={icon} size={16} className="text-gris-500" />
+      <div className="text-h2 font-semibold tracking-[-0.03em] text-negro tabular-nums">{value}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-gris-500 mt-1 flex items-center gap-1.5">
+        <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+        <Icon name={icon} size={15} className="text-gris-500" />
         {label}
       </div>
     </div>

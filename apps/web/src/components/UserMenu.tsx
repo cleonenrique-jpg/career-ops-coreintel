@@ -46,9 +46,9 @@ export function UserMenu({ email, role = null }: Props) {
         <span className="text-xs text-gris-500">▾</span>
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gris-300 rounded-lg shadow-lg min-w-[240px] py-1.5 z-50">
+        <div className="absolute right-0 top-full mt-1 bg-white border border-hairline rounded-2xl shadow-lg min-w-[240px] py-1.5 z-50">
           {email && (
-            <div className="px-3 py-2 border-b border-gris-300 text-xs text-gris-500">
+            <div className="px-3 py-2 border-b border-hairline text-xs text-gris-500">
               <div className="truncate text-intel-700 font-semibold">{email}</div>
               {role && <div className="capitalize">{role}</div>}
             </div>

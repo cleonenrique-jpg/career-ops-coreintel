@@ -54,7 +54,7 @@ export function AdminMetrics() {
           const fill = Math.min(100, k.value);
           const barColor = k.ok ? 'bg-[#4Fae54]' : k.value >= k.target * 0.75 ? 'bg-amarillo' : 'bg-[#E0625F]';
           return (
-            <div key={k.key} className="bg-white border border-[#EAEAEA] rounded-xl p-5">
+            <div key={k.key} className="bg-white border border-hairline rounded-3xl p-5">
               <div className="flex items-start justify-between gap-2 mb-3">
                 <span className="text-sm font-medium text-intel-700 leading-tight">{k.label}</span>
                 <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${

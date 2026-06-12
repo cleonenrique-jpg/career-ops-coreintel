@@ -50,7 +50,7 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gris-300 rounded-lg shadow-lg min-w-[210px] z-50 py-1.5">
+        <div className="absolute right-0 top-full mt-1 bg-white border border-hairline rounded-2xl shadow-lg min-w-[210px] z-50 py-1.5">
           <div
             className="relative"
             onMouseEnter={() => setSubOpen(true)}
@@ -61,7 +61,7 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
               <Icon name="chevron_right" size={14} className="text-gris-500" />
             </button>
             {subOpen && (
-              <div className="absolute right-full top-0 mr-1 bg-white border border-gris-300 rounded-lg shadow-lg min-w-[200px] py-1.5">
+              <div className="absolute right-full top-0 mr-1 bg-white border border-hairline rounded-2xl shadow-lg min-w-[200px] py-1.5">
                 {APPLICATION_STATUSES.map((s) => (
                   <button
                     key={s}
@@ -70,7 +70,7 @@ export function RowMenu({ currentStatus, onChangeStatus, onCopyUrl, onDelete }: 
                       s === currentStatus ? 'bg-intel-50 text-intel-700 font-semibold' : 'text-intel-700'
                     }`}
                   >
-                    <span className="w-3 text-lima">
+                    <span className="w-3 text-estado-ok">
                       {s === currentStatus && <Icon name="check" size={12} weight={700} />}
                     </span>
                     <Icon name={STATUS_ICONS[s]} size={14} />
