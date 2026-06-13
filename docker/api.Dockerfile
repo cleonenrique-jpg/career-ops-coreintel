@@ -6,6 +6,7 @@ FROM base AS deps
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
 COPY apps/api/package.json apps/api/
 COPY packages/db/package.json packages/db/
+COPY packages/gemini/package.json packages/gemini/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
 
@@ -13,6 +14,7 @@ FROM deps AS build
 COPY . .
 RUN pnpm --filter @career-ops/shared build && \
     pnpm --filter @career-ops/db build && \
+    pnpm --filter @career-ops/gemini build && \
     pnpm --filter @career-ops/api build
 
 FROM base AS runtime
