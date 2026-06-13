@@ -1,4 +1,7 @@
-// Long-lived scheduler — uses node-cron to trigger periodic scan + eval cycles.
+// Long-lived scheduler — uses node-cron to trigger periodic scan + eval cycles
+// for TODOS los usuarios activos (multi-tenant), y atiende el queue `scan-user`
+// para scans bajo demanda (p. ej. al completar el onboarding).
+//
 // Scan cadence and auto-eval are configurable via env vars:
 //   SCAN_CRON           default: '0 */4 * * *'   (every 4 hours)
 //   FOLLOWUP_CHECK_CRON default: '0 13 * * *'    (13:00 UTC = 7:00 CR daily)
@@ -9,13 +12,10 @@
 
 import cron from 'node-cron';
 import { eq, and, isNull } from 'drizzle-orm';
-import { db, pipelineUrls } from '@career-ops/db';
-import { boss, QUEUES, type EvaluateJobData } from './lib/queue.js';
+import { db, pipelineUrls, profiles } from '@career-ops/db';
+import { boss, QUEUES, type EvaluateJobData, type ScanUserJobData } from './lib/queue.js';
 import { runScanner as runScannerInProcess } from './scanner.js';
 import { shutdownBrowser } from './lib/fetchJd.js';
-
-const DEFAULT_USER_ID = process.env.DEFAULT_USER_ID;
-if (!DEFAULT_USER_ID) throw new Error('DEFAULT_USER_ID required for scheduler');
 
 const SCAN_CRON = process.env.SCAN_CRON ?? '0 */4 * * *';
 const FOLLOWUP_CHECK_CRON = process.env.FOLLOWUP_CHECK_CRON ?? '0 13 * * *';
@@ -23,31 +23,50 @@ const AUTO_EVAL_NEW = (process.env.AUTO_EVAL_NEW ?? 'true').toLowerCase() !== 'f
 
 let scanRunning = false;
 
+async function activeUserIds(): Promise<string[]> {
+  const rows = await db.select({ userId: profiles.userId })
+    .from(profiles)
+    .where(eq(profiles.status, 'active'));
+  return rows.map((r) => r.userId);
+}
+
+async function scanOneUser(userId: string): Promise<void> {
+  const startedAt = Date.now();
+  try {
+    const result = await runScannerInProcess({ userId });
+    console.log(`[scheduler] scan user=${userId.slice(0, 8)} done in ${Math.round((Date.now() - startedAt) / 1000)}s — inserted=${result.inserted} errors=${result.errors}`);
+  } catch (err) {
+    console.error(`[scheduler] scan user=${userId.slice(0, 8)} failed:`, err instanceof Error ? err.message : err);
+  }
+  if (AUTO_EVAL_NEW) {
+    await autoEvalNewPending(userId);
+  }
+}
+
 async function runScanCycle(): Promise<void> {
   if (scanRunning) {
     console.log('[scheduler] scan already in progress, skipping this tick');
     return;
   }
   scanRunning = true;
-  const startedAt = Date.now();
-  console.log(`[scheduler] scan starting (${new Date().toISOString()})`);
+  console.log(`[scheduler] scan cycle starting (${new Date().toISOString()})`);
 
   try {
-    const result = await runScannerInProcess({ userId: DEFAULT_USER_ID! });
-    console.log(`[scheduler] scan done in ${Math.round((Date.now() - startedAt) / 1000)}s — inserted=${result.inserted} errors=${result.errors}`);
+    const users = await activeUserIds();
+    console.log(`[scheduler] scanning ${users.length} active user(s)`);
+    // Secuencial a propósito: los scrapers comparten un Chromium y los
+    // portales castigan el paralelismo desde una misma IP.
+    for (const userId of users) {
+      await scanOneUser(userId);
+    }
   } catch (err) {
-    console.error('[scheduler] scan failed:', err instanceof Error ? err.message : err);
+    console.error('[scheduler] scan cycle failed:', err instanceof Error ? err.message : err);
   } finally {
     scanRunning = false;
   }
-
-  if (AUTO_EVAL_NEW) {
-    await autoEvalNewPending();
-  }
 }
 
-async function autoEvalNewPending(): Promise<void> {
-  const userId = DEFAULT_USER_ID!;
+async function autoEvalNewPending(userId: string): Promise<void> {
   // Pending pipeline_urls that don't have an application yet (i.e. haven't been evaluated).
   const newOnes = await db.select({ id: pipelineUrls.id }).from(pipelineUrls)
     .where(and(
@@ -56,17 +75,13 @@ async function autoEvalNewPending(): Promise<void> {
       isNull(pipelineUrls.applicationId),
     ));
 
-  if (newOnes.length === 0) {
-    console.log('[scheduler] no new pending entries to evaluate');
-    return;
-  }
+  if (newOnes.length === 0) return;
 
-  await boss.start();
   await boss.createQueue(QUEUES.evaluate).catch(() => {});
   const jobs = await Promise.all(newOnes.map((r) =>
     boss.send(QUEUES.evaluate, { userId, pipelineUrlId: r.id } satisfies EvaluateJobData),
   ));
-  console.log(`[scheduler] enqueued ${jobs.length} new entries for evaluation`);
+  console.log(`[scheduler] user=${userId.slice(0, 8)} enqueued ${jobs.length} new entries for evaluation`);
 }
 
 async function checkFollowUps(): Promise<void> {
@@ -83,6 +98,15 @@ async function main() {
   if (!cron.validate(FOLLOWUP_CHECK_CRON)) throw new Error(`FOLLOWUP_CHECK_CRON invalid: ${FOLLOWUP_CHECK_CRON}`);
 
   console.log(`[scheduler] starting (scan="${SCAN_CRON}", follow-up="${FOLLOWUP_CHECK_CRON}", auto-eval=${AUTO_EVAL_NEW})`);
+
+  // Queue de scans bajo demanda (onboarding → primer scan inmediato).
+  await boss.start();
+  await boss.createQueue(QUEUES.scanUser).catch(() => {});
+  await boss.work<ScanUserJobData>(QUEUES.scanUser, async ([job]) => {
+    if (!job) return;
+    console.log(`[scheduler] on-demand scan requested for user=${job.data.userId.slice(0, 8)}`);
+    await scanOneUser(job.data.userId);
+  });
 
   cron.schedule(SCAN_CRON, () => { runScanCycle().catch((err) => console.error('[scheduler] scan err:', err)); });
   cron.schedule(FOLLOWUP_CHECK_CRON, () => { checkFollowUps().catch((err) => console.error('[scheduler] follow-up err:', err)); });

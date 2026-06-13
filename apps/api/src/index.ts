@@ -11,6 +11,7 @@ import { followUpsRoute } from './routes/follow-ups.js';
 import { adminRoute } from './routes/admin.js';
 import { feedbackRoute } from './routes/feedback.js';
 import { eventsRoute } from './routes/events.js';
+import { onboardingRoute } from './routes/onboarding.js';
 
 const app = new Hono();
 app.use('*', logger());
@@ -32,6 +33,7 @@ app.route('/api/follow-ups', followUpsRoute);
 app.route('/api/admin', adminRoute);
 app.route('/api/feedback', feedbackRoute);
 app.route('/api/events', eventsRoute);
+app.route('/api/onboarding', onboardingRoute);
 
 const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
 serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, () => {

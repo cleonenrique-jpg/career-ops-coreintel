@@ -20,12 +20,13 @@ import {
 import type { ScanSource } from '@career-ops/shared';
 import { fetchJd, shutdownBrowser } from './lib/fetchJd.js';
 
+// Opcional: fallback para ejecución standalone single-tenant. En modo
+// multi-tenant el scheduler siempre pasa userId explícito.
 const DEFAULT_USER_ID = process.env.DEFAULT_USER_ID;
-if (!DEFAULT_USER_ID) throw new Error('DEFAULT_USER_ID required for single-tenant scanner');
 
-// Configurable filters — applied uniformly to both API and Playwright results.
-// In a multi-user setup we'd read these per-user from profiles or portals_config;
-// for now they live as constants matching the legacy portals.yml.
+// Filtros FALLBACK — se usan cuando el usuario no tiene titlePositive propio
+// en portals_config. El wizard de onboarding siembra filtros por usuario;
+// loadUserTitleFilter() los agrega por encima de estos defaults.
 const TITLE_FILTER: TitleFilter = {
   positive: ['gerente', 'director', 'jefe', 'head of', 'country manager', 'vp', 'chief'],
   negative: [
@@ -35,6 +36,17 @@ const TITLE_FILTER: TitleFilter = {
     'devops', 'qa', 'tester', 'data scientist',
   ],
 };
+
+async function loadUserTitleFilter(userId: string): Promise<TitleFilter> {
+  const rows = await db.select({
+    positive: portalsConfig.titlePositive,
+    negative: portalsConfig.titleNegative,
+  }).from(portalsConfig).where(eq(portalsConfig.userId, userId));
+  const positive = Array.from(new Set(rows.flatMap((r) => r.positive ?? [])));
+  const negative = Array.from(new Set(rows.flatMap((r) => r.negative ?? [])));
+  if (positive.length === 0) return TITLE_FILTER; // sin config propia → fallback global
+  return { positive, negative: negative.length ? negative : TITLE_FILTER.negative };
+}
 
 const GEO_FILTER = {
   require_any: ['costa rica', 'san josé', 'san jose', 'heredia', 'alajuela', 'cartago', 'guanacaste', 'puntarenas', 'limón'],
@@ -129,7 +141,7 @@ async function filterLiveOffers<T extends { url: string }>(offers: T[]): Promise
   return { live, expired, errors };
 }
 
-async function runApiScan(userId: string): Promise<{ inserted: number; errors: number }> {
+async function runApiScan(userId: string, titleFilter: TitleFilter): Promise<{ inserted: number; errors: number }> {
   const portals = await db.select().from(portalsConfig).where(eq(portalsConfig.userId, userId));
   const companies: CompanyPortal[] = portals.map((p) => ({
     name: p.companyName ?? p.companySlug ?? 'unknown',
@@ -147,7 +159,7 @@ async function runApiScan(userId: string): Promise<{ inserted: number; errors: n
 
   const result = await runScan({
     companies,
-    titleFilter: TITLE_FILTER,
+    titleFilter,
     seenUrls,
     seenCompanyRoles,
   });
@@ -180,14 +192,14 @@ async function runApiScan(userId: string): Promise<{ inserted: number; errors: n
   return { inserted: liveOffers.length, errors: result.errors.length + livenessErrors };
 }
 
-async function runListingsScan(userId: string): Promise<{ inserted: number; errors: number }> {
+async function runListingsScan(userId: string, titleFilter: TitleFilter): Promise<{ inserted: number; errors: number }> {
   const seenUrlsRows = await db.select({ url: scanHistory.url }).from(scanHistory).where(eq(scanHistory.userId, userId));
   const seenUrls = new Set(seenUrlsRows.map((r) => r.url));
   const pipelineRows = await db.select({ url: pipelineUrls.url }).from(pipelineUrls).where(eq(pipelineUrls.userId, userId));
   for (const r of pipelineRows) seenUrls.add(r.url);
 
   const filters: ScrapeFilters = {
-    title: buildListingTitleFilter(TITLE_FILTER),
+    title: buildListingTitleFilter(titleFilter),
     geo: buildGeoFilter(GEO_FILTER),
   };
 
@@ -260,19 +272,22 @@ export interface RunScannerOptions {
 }
 
 export async function runScanner(opts: RunScannerOptions = {}): Promise<{ inserted: number; errors: number }> {
-  const userId = opts.userId ?? DEFAULT_USER_ID!;
+  const userId = opts.userId ?? DEFAULT_USER_ID;
+  if (!userId) throw new Error('[scanner] userId required (pass opts.userId or set DEFAULT_USER_ID)');
   const userProfile = await db.query.profiles.findFirst({ where: eq(profiles.userId, userId) });
   if (!userProfile) throw new Error(`[scanner] no profile for user ${userId}`);
+
+  const titleFilter = await loadUserTitleFilter(userId);
 
   let inserted = 0;
   let errors = 0;
 
   if (!opts.listingsOnly) {
-    const r = await runApiScan(userId);
+    const r = await runApiScan(userId, titleFilter);
     inserted += r.inserted; errors += r.errors;
   }
   if (!opts.apiOnly) {
-    const r = await runListingsScan(userId);
+    const r = await runListingsScan(userId, titleFilter);
     inserted += r.inserted; errors += r.errors;
   }
 

@@ -19,7 +19,8 @@
     "hono": "^4.6.0",
     "pg-boss": "^10.1.5",
     "postgres": "^3.4.5",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@career-ops/gemini": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",

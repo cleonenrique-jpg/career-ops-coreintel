@@ -19,7 +19,12 @@ export const QUEUES = {
   pdfgen: 'generate-pdf',
   interviewPrep: 'generate-interview-prep',
   tailorCv: 'tailor-cv',
+  scanUser: 'scan-user',
 } as const;
+
+export type ScanUserJobData = {
+  userId: string;
+};
 
 export type EvaluateJobData = {
   userId: string;
