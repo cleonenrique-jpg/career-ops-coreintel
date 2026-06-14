@@ -48,6 +48,15 @@ async function loadUserTitleFilter(userId: string): Promise<TitleFilter> {
   return { positive, negative: negative.length ? negative : TITLE_FILTER.negative };
 }
 
+// Roles objetivo del usuario (sembrados por el onboarding en portals_config.queries).
+// Se usan para construir las URLs de búsqueda de los scrapers de listados. Vacío
+// → cada portal cae a sus keywords default.
+async function loadUserQueries(userId: string): Promise<string[]> {
+  const rows = await db.select({ queries: portalsConfig.queries })
+    .from(portalsConfig).where(eq(portalsConfig.userId, userId));
+  return Array.from(new Set(rows.flatMap((r) => r.queries ?? [])));
+}
+
 const GEO_FILTER = {
   require_any: ['costa rica', 'san josé', 'san jose', 'heredia', 'alajuela', 'cartago', 'guanacaste', 'puntarenas', 'limón'],
   exclude_if_only: ['panama', 'guatemala', 'honduras', 'el salvador', 'nicaragua', 'mexico', 'colombia', 'argentina', 'brasil', 'brazil', 'chile', 'peru'],
@@ -192,7 +201,7 @@ async function runApiScan(userId: string, titleFilter: TitleFilter): Promise<{ i
   return { inserted: liveOffers.length, errors: result.errors.length + livenessErrors };
 }
 
-async function runListingsScan(userId: string, titleFilter: TitleFilter): Promise<{ inserted: number; errors: number }> {
+async function runListingsScan(userId: string, titleFilter: TitleFilter, queries: string[]): Promise<{ inserted: number; errors: number }> {
   const seenUrlsRows = await db.select({ url: scanHistory.url }).from(scanHistory).where(eq(scanHistory.userId, userId));
   const seenUrls = new Set(seenUrlsRows.map((r) => r.url));
   const pipelineRows = await db.select({ url: pipelineUrls.url }).from(pipelineUrls).where(eq(pipelineUrls.userId, userId));
@@ -208,6 +217,7 @@ async function runListingsScan(userId: string, titleFilter: TitleFilter): Promis
     filters,
     seenUrls,
     env: process.env,
+    queries,
   });
 
   const allNew = results.flatMap((r) => r.newOffers.map((o) => ({ ...o, source: r.source as ScanSource })));
@@ -278,6 +288,7 @@ export async function runScanner(opts: RunScannerOptions = {}): Promise<{ insert
   if (!userProfile) throw new Error(`[scanner] no profile for user ${userId}`);
 
   const titleFilter = await loadUserTitleFilter(userId);
+  const queries = await loadUserQueries(userId);
 
   let inserted = 0;
   let errors = 0;
@@ -287,7 +298,7 @@ export async function runScanner(opts: RunScannerOptions = {}): Promise<{ insert
     inserted += r.inserted; errors += r.errors;
   }
   if (!opts.apiOnly) {
-    const r = await runListingsScan(userId, titleFilter);
+    const r = await runListingsScan(userId, titleFilter, queries);
     inserted += r.inserted; errors += r.errors;
   }
 

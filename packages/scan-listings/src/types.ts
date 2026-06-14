@@ -36,6 +36,10 @@ export interface PortalConfig {
   name: string;
   source: 'talent' | 'computrabajo' | 'procomer' | 'cinde' | 'linkedin';
   urls?: string[];
+  /** Construye las URLs de búsqueda desde las queries del usuario (roles
+   *  objetivo). Sin queries → cae a las keywords default del portal. Tiene
+   *  prioridad sobre `urls` cuando está definido. */
+  buildUrls?: (queries: string[]) => string[];
   pageExtractor?: PageExtractor;
   fetcher?: Fetcher;
   enricher?: Enricher;

@@ -1,15 +1,25 @@
 import type { PortalConfig } from '../types.js';
 
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36';
-const KEYWORDS = ['gerente', 'director', 'jefe', 'country-manager'];
+const DEFAULT_KEYWORDS = ['gerente', 'director', 'jefe', 'country-manager'];
+
+// Computrabajo usa páginas-categoría SEO: /trabajo-de-{slug}. Convertimos cada
+// rol objetivo a un slug con guiones (sin acentos ni símbolos).
+function slugify(q: string): string {
+  return q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
 
 export const computrabajo: PortalConfig = {
   name: 'Computrabajo CR',
   source: 'computrabajo',
-  urls: KEYWORDS.flatMap((kw) => [
-    `https://www.computrabajo.co.cr/trabajo-de-${kw}`,
-    ...[2, 3, 4, 5].map((p) => `https://www.computrabajo.co.cr/trabajo-de-${kw}?p=${p}`),
-  ]),
+  buildUrls: (queries) => {
+    const kws = (queries && queries.length ? queries : DEFAULT_KEYWORDS).slice(0, 4).map(slugify).filter(Boolean);
+    return kws.flatMap((kw) => [
+      `https://www.computrabajo.co.cr/trabajo-de-${kw}`,
+      ...[2, 3, 4, 5].map((p) => `https://www.computrabajo.co.cr/trabajo-de-${kw}?p=${p}`),
+    ]);
+  },
   pageExtractor: () => {
     const out: Array<{ title: string; url: string; company: string; location: string }> = [];
     const seen = new Set<string>();

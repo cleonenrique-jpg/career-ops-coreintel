@@ -10,6 +10,9 @@ export interface ScrapeOptions {
   filters: ScrapeFilters;
   seenUrls: Set<string>;
   env: Record<string, string | undefined>;
+  /** Roles objetivo del usuario. Cada portal con `buildUrls` los usa para armar
+   *  sus URLs de búsqueda. Vacío → cada portal cae a sus keywords default. */
+  queries?: string[];
 }
 
 async function processCandidates(
@@ -46,6 +49,7 @@ async function scrapePortal(
   filters: ScrapeFilters,
   seenUrls: Set<string>,
   env: Record<string, string | undefined>,
+  queries: string[],
 ): Promise<PortalRunResult> {
   const context = await browser.newContext({ userAgent: USER_AGENT });
   const result: PortalRunResult = {
@@ -74,14 +78,16 @@ async function scrapePortal(
     return result;
   }
 
-  // Branch 2: URL-based scraping with pageExtractor
-  if (!portal.pageExtractor || !portal.urls) {
+  // Branch 2: URL-based scraping with pageExtractor.
+  // buildUrls(queries) tiene prioridad; si no, usa las urls estáticas.
+  const urls = portal.buildUrls ? portal.buildUrls(queries) : (portal.urls ?? []);
+  if (!portal.pageExtractor || urls.length === 0) {
     await context.close();
     return result;
   }
   const page = await context.newPage();
   page.setDefaultTimeout(PAGE_TIMEOUT_MS);
-  for (const url of portal.urls) {
+  for (const url of urls) {
     try {
       console.log(`  → ${portal.name}: ${url}`);
       const resp = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: PAGE_TIMEOUT_MS });
@@ -110,7 +116,7 @@ export async function runListingScrape(opts: ScrapeOptions): Promise<PortalRunRe
     // Sequential by design — multiple Playwright pages in parallel are flaky.
     for (const portal of opts.portals) {
       console.log(`▸ ${portal.name}`);
-      const r = await scrapePortal(browser, portal, opts.filters, opts.seenUrls, opts.env);
+      const r = await scrapePortal(browser, portal, opts.filters, opts.seenUrls, opts.env, opts.queries ?? []);
       results.push(r);
       console.log(`  found=${r.stats.found} kept=${r.stats.kept} title=${r.stats.skipped_title} geo=${r.stats.skipped_geo} dup=${r.stats.skipped_dup} err=${r.stats.errors}`);
     }

@@ -1,14 +1,22 @@
 import type { PortalConfig } from '../types.js';
 
-const KEYWORDS = ['gerente', 'director'];
+const DEFAULT_KEYWORDS = ['gerente', 'director'];
+
+// LinkedIn busca por keyword libre. Codificamos el rol completo (URL-encoded).
+function kwenc(q: string): string {
+  return encodeURIComponent(q.toLowerCase().trim());
+}
 
 export const linkedin: PortalConfig = {
   name: 'LinkedIn CR',
   source: 'linkedin',
-  urls: KEYWORDS.flatMap((kw) => [
-    `https://cr.linkedin.com/jobs/search?keywords=${kw}&location=Costa%20Rica`,
-    ...[25, 50, 75, 100].map((s) => `https://cr.linkedin.com/jobs/search?keywords=${kw}&location=Costa%20Rica&start=${s}`),
-  ]),
+  buildUrls: (queries) => {
+    const kws = (queries && queries.length ? queries : DEFAULT_KEYWORDS).slice(0, 4).map(kwenc).filter(Boolean);
+    return kws.flatMap((kw) => [
+      `https://cr.linkedin.com/jobs/search?keywords=${kw}&location=Costa%20Rica`,
+      ...[25, 50, 75, 100].map((s) => `https://cr.linkedin.com/jobs/search?keywords=${kw}&location=Costa%20Rica&start=${s}`),
+    ]);
+  },
   pageExtractor: () => {
     const re = /linkedin\.com\/jobs\/view\//;
     const out: Array<{ title: string; url: string; company: string; location: string }> = [];
