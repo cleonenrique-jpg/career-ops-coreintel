@@ -7,18 +7,9 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 
 const REASON_MESSAGES: Record<string, { tone: 'warning' | 'danger'; text: string }> = {
-  pending: {
-    tone: 'warning',
-    text: 'Tu cuenta está pendiente de aprobación. Un administrador debe activarla antes de que puedas acceder.',
-  },
-  suspended: {
-    tone: 'danger',
-    text: 'Tu cuenta fue suspendida. Contactá a un administrador para más información.',
-  },
-  auth_error: {
-    tone: 'danger',
-    text: 'El acceso anterior expiró. Pedí un código nuevo abajo.',
-  },
+  pending: { tone: 'warning', text: 'Tu cuenta está pendiente de aprobación.' },
+  suspended: { tone: 'danger', text: 'Tu cuenta fue suspendida. Contactá a un administrador.' },
+  auth_error: { tone: 'danger', text: 'El acceso anterior expiró. Probá de nuevo.' },
 };
 
 function ReasonBanner() {
@@ -26,116 +17,120 @@ function ReasonBanner() {
   const reason = params.get('reason');
   if (!reason || !REASON_MESSAGES[reason]) return null;
   const { tone, text } = REASON_MESSAGES[reason];
-  const styles =
-    tone === 'danger'
-      ? 'bg-red-50 border-red-300 text-red-700'
-      : 'bg-amarillo/15 border-amarillo text-[#7a5d00]';
-  return (
-    <div className={`mb-4 rounded border px-3 py-2 text-sm ${styles}`}>{text}</div>
-  );
+  const styles = tone === 'danger' ? 'bg-red-50 border-red-300 text-red-700' : 'bg-amarillo/15 border-amarillo text-[#7a5d00]';
+  return <div className={`mb-4 rounded border px-3 py-2 text-sm ${styles}`}>{text}</div>;
 }
+
+type Mode = 'signin' | 'signup' | 'forgot';
 
 function LoginForm() {
   const params = useSearchParams();
   const next = params.get('next') || '/';
+  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   function sb() {
-    // Lazy-init: evita fallar el pre-render si las env no están en build time.
     return createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
   }
 
-  async function sendCode() {
-    if (!email) return;
+  async function submit() {
+    setError(null); setInfo(null);
+    if (!email) { setError('Ingresá tu email.'); return; }
+
+    if (mode === 'forgot') {
+      setBusy(true);
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/reset` : undefined;
+      const { error } = await sb().auth.resetPasswordForEmail(email, { redirectTo });
+      setBusy(false);
+      if (error) setError(error.message);
+      else setInfo('Si la cuenta existe, te enviamos un link para restablecer tu contraseña.');
+      return;
+    }
+
+    if (!password) { setError('Ingresá tu contraseña.'); return; }
+    if (mode === 'signup' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return; }
+
     setBusy(true);
-    setError(null);
-    const { error } = await sb().auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        // El enlace queda como respaldo; el flujo principal es el código.
-        emailRedirectTo:
-          typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
-      },
-    });
-    setBusy(false);
-    if (error) setError(error.message);
-    else { setStep('code'); setCode(''); }
+    if (mode === 'signin') {
+      const { error } = await sb().auth.signInWithPassword({ email, password });
+      setBusy(false);
+      if (error) setError('Email o contraseña incorrectos.');
+      else window.location.href = next;
+    } else {
+      const { data, error } = await sb().auth.signUp({ email, password });
+      setBusy(false);
+      if (error) setError(error.message);
+      else if (data.session) window.location.href = next; // "Confirm email" OFF → entra directo
+      else setInfo('Cuenta creada. Revisá tu email para confirmarla y luego iniciá sesión.');
+    }
   }
 
-  async function verify() {
-    if (code.replace(/\D/g, '').length < 6) return;
-    setBusy(true);
-    setError(null);
-    const { error } = await sb().auth.verifyOtp({ email, token: code.replace(/\D/g, ''), type: 'email' });
-    setBusy(false);
-    if (error) setError('Código incorrecto o vencido. Pedí uno nuevo.');
-    else window.location.href = next;
-  }
-
-  const inputCls = 'flex-1 rounded-[14px] border border-hairline px-3 py-2 text-sm focus:outline-none focus:border-core';
+  const inputCls = 'w-full rounded-[14px] border border-hairline px-3 py-2 text-sm focus:outline-none focus:border-core';
 
   return (
     <div className="max-w-md mx-auto mt-12">
       <Card>
-        <h1 className="text-h2 text-negro mb-2">Entrá o creá tu cuenta</h1>
+        <h1 className="text-h2 text-negro mb-1">
+          {mode === 'signin' ? 'Iniciá sesión' : mode === 'signup' ? 'Creá tu cuenta' : 'Restablecer contraseña'}
+        </h1>
+        <p className="text-text-muted mb-4 text-sm">
+          {mode === 'signin' && 'Ingresá con tu email y contraseña.'}
+          {mode === 'signup' && 'Creá tu cuenta y te guiamos para configurar tu búsqueda.'}
+          {mode === 'forgot' && 'Te enviamos un link para que elijas una contraseña nueva.'}
+        </p>
 
-        {step === 'email' ? (
-          <>
-            <p className="text-text-muted mb-4">
-              Ingresá tu email y te enviamos un <strong>código de 6 dígitos</strong>. Si es tu
-              primera vez, tu cuenta se crea automáticamente y te guiamos para configurar tu búsqueda.
+        <ReasonBanner />
+        {error && <div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {info && <div className="mb-4 rounded border border-[#cfe8d4] bg-[#EDF3EC] px-3 py-2 text-sm text-[#346538]">{info}</div>}
+
+        <div className="space-y-3">
+          <input
+            type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+            placeholder="tu@email.com" className={inputCls} autoFocus
+          />
+          {mode !== 'forgot' && (
+            <input
+              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              placeholder={mode === 'signup' ? 'Elegí una contraseña (mín. 6)' : 'Tu contraseña'}
+              className={inputCls}
+            />
+          )}
+          <Button onClick={submit} disabled={busy} className="w-full">
+            {busy ? 'Procesando…' : mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Crear cuenta' : 'Enviar link'}
+          </Button>
+        </div>
+
+        <div className="mt-4 text-sm text-gris-500 space-y-1.5">
+          {mode === 'signin' && (
+            <>
+              <p>¿No tenés cuenta?{' '}
+                <button onClick={() => { setMode('signup'); setError(null); setInfo(null); }} className="text-core-500 font-semibold hover:underline">Creá una</button>
+              </p>
+              <p>
+                <button onClick={() => { setMode('forgot'); setError(null); setInfo(null); }} className="text-gris-500 hover:text-intel-700 hover:underline">¿Olvidaste tu contraseña?</button>
+              </p>
+            </>
+          )}
+          {mode === 'signup' && (
+            <p>¿Ya tenés cuenta?{' '}
+              <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-core-500 font-semibold hover:underline">Iniciá sesión</button>
             </p>
-            <ReasonBanner />
-            {error && <div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && email) sendCode(); }}
-                placeholder="tu@email.com"
-                className={inputCls}
-                autoFocus
-              />
-              <Button onClick={sendCode} disabled={!email || busy}>{busy ? 'Enviando…' : 'Continuar'}</Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-text-muted mb-4">
-              Te enviamos un <strong>código de 6 dígitos</strong> a <strong className="text-negro">{email}</strong>.
-              Ingresalo acá (revisá spam si no llega):
+          )}
+          {mode === 'forgot' && (
+            <p>
+              <button onClick={() => { setMode('signin'); setError(null); setInfo(null); }} className="text-core-500 font-semibold hover:underline">← Volver a iniciar sesión</button>
             </p>
-            {error && <div className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') verify(); }}
-                placeholder="123456"
-                className={`${inputCls} tracking-[0.4em] font-mono text-center text-lg`}
-                autoFocus
-              />
-              <Button onClick={verify} disabled={code.replace(/\D/g, '').length < 6 || busy}>{busy ? 'Verificando…' : 'Entrar'}</Button>
-            </div>
-            <div className="flex items-center justify-between mt-3 text-xs">
-              <button onClick={() => { setStep('email'); setError(null); }} className="text-gris-500 hover:text-intel-700">← Cambiar email</button>
-              <button onClick={sendCode} disabled={busy} className="text-core-500 font-semibold hover:underline disabled:opacity-50">Reenviar código</button>
-            </div>
-          </>
-        )}
+          )}
+        </div>
 
         <p className="text-xs text-gris-500 mt-5 pt-4 border-t border-hairline">
           career-ops por{' '}
