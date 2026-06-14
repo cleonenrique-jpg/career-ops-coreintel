@@ -36,7 +36,7 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'member']);
 export const userStatusEnum = pgEnum('user_status', ['pending', 'active', 'suspended']);
 
 export const adminActionEnum = pgEnum('admin_action', [
-  'invite', 'approve', 'suspend', 'reactivate', 'role_change',
+  'invite', 'approve', 'suspend', 'reactivate', 'role_change', 'delete',
 ]);
 
 export const feedbackTypeEnum = pgEnum('feedback_type', [

@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-type AdminAction = 'invite' | 'approve' | 'suspend' | 'reactivate' | 'role_change';
+type AdminAction = 'invite' | 'approve' | 'suspend' | 'reactivate' | 'role_change' | 'delete';
 
 async function logAction(input: {
   actor: AuthCtx;
@@ -156,6 +156,41 @@ adminRoute.patch('/users/:userId', zValidator('json', PatchSchema), async (c) =>
   }
 
   return c.json({ user: row });
+});
+
+// Elimina un usuario y TODOS sus datos. Las tablas tienen user_id ON DELETE
+// CASCADE, así que borrar el usuario de Auth arrastra applications, cvs,
+// pipeline, reports, feedback, usage_events, profile, etc.
+adminRoute.delete('/users/:userId', async (c) => {
+  const userId = c.req.param('userId');
+  const me = c.get('auth');
+  if (userId === me.userId) throw new HTTPException(400, { message: 'no podés eliminar tu propia cuenta' });
+
+  const [existing] = await db.select({ email: profiles.email })
+    .from(profiles).where(eq(profiles.userId, userId)).limit(1);
+  if (!existing) throw new HTTPException(404, { message: 'user not found' });
+
+  // Auditar ANTES de borrar (mientras el userId todavía existe como FK válida).
+  await logAction({ actor: me, action: 'delete', targetUserId: userId, targetEmail: existing.email });
+
+  // Limpiar archivos del usuario en storage (best-effort).
+  const bucket = process.env.STORAGE_BUCKET ?? 'career-ops';
+  try {
+    for (const prefix of [userId, `${userId}/feedback`]) {
+      const { data: files } = await supabaseAdmin.storage.from(bucket).list(prefix);
+      if (files && files.length) {
+        await supabaseAdmin.storage.from(bucket).remove(files.map((f) => `${prefix}/${f.name}`));
+      }
+    }
+  } catch (err) {
+    console.error('[admin] storage cleanup falló:', err instanceof Error ? err.message : err);
+  }
+
+  // Borrar de Auth → cascada a todas las tablas (user_id ON DELETE CASCADE).
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) throw new HTTPException(500, { message: error.message });
+
+  return c.json({ ok: true });
 });
 
 adminRoute.get('/audit-log', async (c) => {

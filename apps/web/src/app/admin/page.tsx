@@ -104,6 +104,16 @@ export default function AdminPage() {
     }
   }
 
+  async function deleteUser(userId: string, email: string) {
+    if (!confirm(`¿Eliminar a ${email} y TODOS sus datos (postulaciones, CVs, reportes, feedback)?\n\nEsta acción es permanente y no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/api/admin/users/${userId}`);
+      await load();
+    } catch (e) {
+      alert((e as Error).message);
+    }
+  }
+
   async function invite(e: React.FormEvent) {
     e.preventDefault();
     if (!inviteEmail) return;
@@ -300,6 +310,10 @@ export default function AdminPage() {
                             <button onClick={() => patchUser(u.userId, { role: u.role === 'member' ? 'admin' : 'member' })}
                               className="px-3 py-1.5 text-xs font-medium rounded border border-hairline text-gris-500 hover:bg-tile hover:text-intel-700 active:scale-[0.98] transition">
                               {u.role === 'member' ? 'Hacer admin' : 'Quitar admin'}
+                            </button>
+                            <button onClick={() => deleteUser(u.userId, u.email)}
+                              className="px-3 py-1.5 text-xs font-medium rounded border border-hairline text-gris-500 hover:bg-[#FDEBEC] hover:border-[#FDEBEC] hover:text-[#9F2F2D] active:scale-[0.98] transition">
+                              Eliminar
                             </button>
                           </div>
                         )}
