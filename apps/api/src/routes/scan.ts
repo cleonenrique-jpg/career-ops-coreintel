@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { SCAN_SOURCES } from '@career-ops/shared';
 import { auth, type AuthCtx } from '../lib/auth.js';
+import { boss, ensureStarted, QUEUES, type ScanUserJobData } from '../lib/queue.js';
 
 type Env = { Variables: { auth: AuthCtx } };
 
@@ -57,9 +58,20 @@ scanRoute.delete('/portals/:id', async (c) => {
   return c.json({ ok: true });
 });
 
-// Manual scan trigger — actually fires the worker by enqueueing a job.
-// For now, the scanner is a cron worker, so this endpoint just returns 202.
-// (Optional future: enqueue a `scan-now` job that the scanner consumes.)
+// Dispara un scan para el usuario actual (lo consume el worker-scheduler vía
+// el queue scan-user). Throttle: como máximo un scan por usuario por hora
+// (singletonKey + singletonSeconds), así llamarlo en cada login no spamea.
 scanRoute.post('/run', async (c) => {
-  return c.json({ accepted: true, note: 'scanner runs on cron — manual trigger via Railway dashboard for now' }, 202);
+  const { userId } = c.get('auth');
+  try {
+    await ensureStarted();
+    await boss.send(QUEUES.scanUser, { userId } satisfies ScanUserJobData, {
+      singletonKey: userId,
+      singletonSeconds: 3600,
+    });
+    return c.json({ accepted: true });
+  } catch (err) {
+    console.error('[scan/run] enqueue falló:', err instanceof Error ? err.message : err);
+    return c.json({ accepted: false }, 500);
+  }
 });

@@ -7,6 +7,11 @@ import { api } from '@/lib/api';
 // retención (3 días) y uso semanal. No bloquea ni molesta al usuario.
 export function UsageTracker() {
   useEffect(() => {
+    // Scan al ingresar a la cuenta. El servidor lo throttlea a 1/hora por
+    // usuario, así que llamarlo en cada carga no genera scans de más.
+    api.post('/api/scan/run', {}).catch(() => {});
+
+    // Ping de uso (1/día/navegador) para las métricas de retención y uso semanal.
     try {
       const today = new Date().toISOString().slice(0, 10);
       const key = 'usage:lastPing';

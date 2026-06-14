@@ -43,6 +43,7 @@ export function OnboardingWizard({ email, initialStep = 0, demo }: WizardProps) 
   // Paso 1
   const [cvText, setCvText] = useState('');
   const [parsing, setParsing] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Paso 2 (borrador editable)
@@ -66,12 +67,33 @@ export function OnboardingWizard({ email, initialStep = 0, demo }: WizardProps) 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!/\.(txt|md)$/i.test(file.name)) {
-      setError('Subí un archivo .txt o .md — si tu CV es PDF, abrilo y copiá/pegá el texto acá.');
-      return;
-    }
     setError(null);
-    setCvText(await file.text());
+    const name = file.name.toLowerCase();
+    try {
+      if (name.endsWith('.docx')) {
+        setExtracting(true);
+        const { default: JSZip } = await import('jszip');
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const xml = await zip.file('word/document.xml')?.async('string');
+        if (!xml) throw new Error('no-doc');
+        const docXml = new DOMParser().parseFromString(xml, 'application/xml');
+        const paras = Array.from(docXml.getElementsByTagName('w:p')).map((p) =>
+          Array.from(p.getElementsByTagName('w:t')).map((t) => t.textContent || '').join(''));
+        const text = paras.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+        setExtracting(false);
+        if (text.length < 30) throw new Error('empty');
+        setCvText(text);
+      } else if (/\.(txt|md)$/.test(name)) {
+        setCvText(await file.text());
+      } else if (name.endsWith('.doc')) {
+        setError('El formato .doc (Word antiguo) no se puede leer en el navegador. Guardalo como .docx, o pegá el texto.');
+      } else {
+        setError('Subí un .docx (Word), .txt o .md — o pegá el texto del CV.');
+      }
+    } catch {
+      setExtracting(false);
+      setError('No se pudo leer el archivo. Probá guardarlo como .docx o pegá el texto del CV.');
+    }
   }
 
   async function analyze() {
@@ -207,8 +229,8 @@ export function OnboardingWizard({ email, initialStep = 0, demo }: WizardProps) 
           <div className="flex items-center justify-between flex-wrap gap-3">
             <label className="inline-flex items-center gap-2 text-sm text-gris-500 cursor-pointer hover:text-negro">
               <Icon name="upload_file" size={18} />
-              o subí un .txt / .md
-              <input ref={fileRef} type="file" accept=".txt,.md" onChange={onFile} className="hidden" />
+              {extracting ? 'Leyendo el documento…' : 'o subí un Word (.docx), .txt o .md'}
+              <input ref={fileRef} type="file" accept=".docx,.txt,.md" onChange={onFile} className="hidden" />
             </label>
             <button
               onClick={analyze}
