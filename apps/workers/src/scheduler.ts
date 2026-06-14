@@ -3,7 +3,7 @@
 // para scans bajo demanda (p. ej. al completar el onboarding).
 //
 // Scan cadence and auto-eval are configurable via env vars:
-//   SCAN_CRON           default: '0 */4 * * *'   (every 4 hours)
+//   SCAN_CRON           default: '0 */8 * * *'   (every 8 hours)
 //   FOLLOWUP_CHECK_CRON default: '0 13 * * *'    (13:00 UTC = 7:00 CR daily)
 //   AUTO_EVAL_NEW       default: 'true'          (queue evaluator for new pending after scan)
 //
@@ -17,7 +17,7 @@ import { boss, QUEUES, type EvaluateJobData, type ScanUserJobData } from './lib/
 import { runScanner as runScannerInProcess } from './scanner.js';
 import { shutdownBrowser } from './lib/fetchJd.js';
 
-const SCAN_CRON = process.env.SCAN_CRON ?? '0 */4 * * *';
+const SCAN_CRON = process.env.SCAN_CRON ?? '0 */8 * * *';
 const FOLLOWUP_CHECK_CRON = process.env.FOLLOWUP_CHECK_CRON ?? '0 13 * * *';
 const AUTO_EVAL_NEW = (process.env.AUTO_EVAL_NEW ?? 'true').toLowerCase() !== 'false';
 
