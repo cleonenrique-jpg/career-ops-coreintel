@@ -11,8 +11,9 @@
 // run `pnpm --filter @career-ops/workers dev:scheduler`.
 
 import cron from 'node-cron';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, inArray } from 'drizzle-orm';
 import { db, pipelineUrls, profiles } from '@career-ops/db';
+import { filterScanResults } from '@career-ops/gemini';
 import { boss, QUEUES, type EvaluateJobData, type ScanUserJobData } from './lib/queue.js';
 import { runScanner as runScannerInProcess } from './scanner.js';
 import { shutdownBrowser } from './lib/fetchJd.js';
@@ -66,25 +67,60 @@ async function runScanCycle(): Promise<void> {
   }
 }
 
+// Evaluación en dos niveles:
+//  Nivel 1 (barato, modelo 8b/flash): filtro de relevancia por título+empresa,
+//    en lote. Descarta lo irrelevante para no gastar el presupuesto del 70b.
+//  Nivel 2 (70b): solo las que pasan se encolan para el análisis profundo.
+// Si el filtro falla (LLM caído/limit), se pasan TODAS (no se pierde nada).
 async function autoEvalNewPending(userId: string): Promise<void> {
-  // Pending pipeline_urls that don't have an application yet (i.e. haven't been evaluated).
-  const newOnes = await db.select({ id: pipelineUrls.id }).from(pipelineUrls)
-    .where(and(
-      eq(pipelineUrls.userId, userId),
-      eq(pipelineUrls.status, 'pending'),
-      isNull(pipelineUrls.applicationId),
-    ));
-
-  if (newOnes.length === 0) return;
+  const pend = await db.select({
+    id: pipelineUrls.id, url: pipelineUrls.url, title: pipelineUrls.title, company: pipelineUrls.company,
+  }).from(pipelineUrls).where(and(
+    eq(pipelineUrls.userId, userId),
+    eq(pipelineUrls.status, 'pending'),
+    isNull(pipelineUrls.applicationId),
+  ));
+  if (pend.length === 0) return;
 
   await boss.createQueue(QUEUES.evaluate).catch(() => {});
-  // singletonKey por pipelineUrlId: evita encolar la misma oferta dos veces
-  // mientras ya hay un job pendiente/activo para ella (no malgasta la cuota LLM).
-  const jobs = await Promise.all(newOnes.map((r) =>
+
+  // --- Nivel 1: pre-filtro barato (8b) ---
+  let toEval = pend;
+  try {
+    const profile = await db.query.profiles.findFirst({ where: eq(profiles.userId, userId) });
+    const archetypes = (profile?.archetypes ?? []) as Array<{ name: string; level: string; fit: string }>;
+    if (archetypes.length > 0) {
+      const locationPolicy = `Preferentemente ${profile?.location ?? 'Costa Rica'} o trabajo remoto.`;
+      const keep = new Set<string>();
+      for (let i = 0; i < pend.length; i += 40) {
+        const batch = pend.slice(i, i + 40);
+        const { data } = await filterScanResults({
+          jobs: batch.map((b) => ({ url: b.url, title: b.title ?? '', company: b.company ?? '', location: null })),
+          archetypes, locationPolicy, userId,
+        });
+        for (const d of data.decisions) if (d.keep) keep.add(d.url);
+      }
+      toEval = pend.filter((p) => keep.has(p.url));
+      const discards = pend.filter((p) => !keep.has(p.url));
+      if (discards.length > 0) {
+        await db.update(pipelineUrls).set({ status: 'discarded', processedAt: new Date() })
+          .where(inArray(pipelineUrls.id, discards.map((d) => d.id)));
+      }
+      console.log(`[scheduler] user=${userId.slice(0, 8)} pre-filtro 8b: ${toEval.length} relevantes, ${discards.length} descartadas (de ${pend.length})`);
+    }
+  } catch (err) {
+    console.warn(`[scheduler] pre-filtro 8b falló, paso todas:`, err instanceof Error ? err.message : err);
+    toEval = pend;
+  }
+
+  if (toEval.length === 0) return;
+
+  // --- Nivel 2: análisis profundo (70b). singletonKey evita duplicar la misma oferta. ---
+  const jobs = await Promise.all(toEval.map((r) =>
     boss.send(QUEUES.evaluate, { userId, pipelineUrlId: r.id } satisfies EvaluateJobData, { singletonKey: r.id }),
   ));
   const enq = jobs.filter(Boolean).length;
-  console.log(`[scheduler] user=${userId.slice(0, 8)} enqueued ${enq}/${newOnes.length} new entries for evaluation (deduped)`);
+  console.log(`[scheduler] user=${userId.slice(0, 8)} encoladas ${enq}/${toEval.length} para evaluación profunda (deduped)`);
 }
 
 async function checkFollowUps(): Promise<void> {
