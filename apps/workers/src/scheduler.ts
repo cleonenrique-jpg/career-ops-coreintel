@@ -78,10 +78,13 @@ async function autoEvalNewPending(userId: string): Promise<void> {
   if (newOnes.length === 0) return;
 
   await boss.createQueue(QUEUES.evaluate).catch(() => {});
+  // singletonKey por pipelineUrlId: evita encolar la misma oferta dos veces
+  // mientras ya hay un job pendiente/activo para ella (no malgasta la cuota LLM).
   const jobs = await Promise.all(newOnes.map((r) =>
-    boss.send(QUEUES.evaluate, { userId, pipelineUrlId: r.id } satisfies EvaluateJobData),
+    boss.send(QUEUES.evaluate, { userId, pipelineUrlId: r.id } satisfies EvaluateJobData, { singletonKey: r.id }),
   ));
-  console.log(`[scheduler] user=${userId.slice(0, 8)} enqueued ${jobs.length} new entries for evaluation`);
+  const enq = jobs.filter(Boolean).length;
+  console.log(`[scheduler] user=${userId.slice(0, 8)} enqueued ${enq}/${newOnes.length} new entries for evaluation (deduped)`);
 }
 
 async function checkFollowUps(): Promise<void> {
